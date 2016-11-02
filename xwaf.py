@@ -138,13 +138,6 @@ class Program(object):
 
         self.output.good_print('you tried %d times' % self.try_times, 'red')
 
-        self.output.good_print('go to check if its possitive to bypass waf,vim %s ? y/n default[y] >' %
-                               self.log_file, 'green')
-        choose = input()
-        if choose == 'n' or choose == 'N':
-            sys.exit(0)
-        else:
-            os.system("vim %s" % self.log_file)
 
     def handle_url(self):
         if len(sys.argv) == 1:
