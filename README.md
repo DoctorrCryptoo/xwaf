@@ -1,9 +1,9 @@
-```
+<strong>
 										   _  ___      _____   ____
 										  | |/_/ | /| / / _ | / __/
 										 _>  < | |/ |/ / __ |/ _/  
 										/_/|_| |__/|__/_/ |_/_/ 
-```
+</strong>
 
 # xwaf
 
@@ -15,7 +15,7 @@
 以[127.0.0.1/1.php?id=1为例]
 
 1>start
-2>检测系统/usr/share/sqlmap/127.0.0.1/log文件是否存在
+2>检测系统/root/.sqlmap/output/127.0.0.1/log文件是否存在
 3>获取log文件:
 	如果不存在log文件则调用get_log_file_need_tamper函数,执行完这个函数后获得log文件,也即成功检测出目标
 	url有sqli注入漏洞,如果执行完get_log_file_need_tamper函数没有获得log文件则认为该url没有sqli漏洞
