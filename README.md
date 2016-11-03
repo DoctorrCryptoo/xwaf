@@ -75,5 +75,6 @@ eval(get_key_value_from_config_file(self.log_config_file,'default','db_type'))
 
 ### Todo
 
-1>特殊的access的entries获取的判断及退出[finished]
+1>特殊的access的entries获取的判断及退出[finished]  
+2>代理切换防封
 
