@@ -164,6 +164,8 @@ class Program(object):
         oracle_pattern = re.compile(r"Oracle", re.I)
         postgresql_pattern = re.compile(r"(PostgreSQL)|(PGSQL)", re.I)
         access_pattern = re.compile(r"(Microsoft Access)|(Access)", re.I)
+        #access特殊pattern
+        accessSpecialPattern=re.compile(r"MSysAccessObjects",re.I)
         sqlite_pattern = re.compile(r"SQLite", re.I)
         DB2_pattern = re.compile(r"(IBM DB2)|(DB2)", re.I)
         FIREBIRD_pattern = re.compile(r"Firebird", re.I)
@@ -195,6 +197,8 @@ class Program(object):
                     return "SYBASE"
                 if re.search(HSQLDB_pattern, each):
                     return "HSQLDB"
+        elif re.search(accessSpecialPattern,log_content):
+            return "ACCESS"
         else:
             self.output.good_print("can not get db type from log file,I will return 0", 'red')
             return 0
@@ -722,7 +726,7 @@ class Program(object):
 
                         db_name_list = self.get_db_name_from_log_file(self.log_file)
                         if db_name_list != 0 and db_name_list != []:
-                            self.good_print("恭喜大爷!!! 使用当前tamper:%s获得了当前url的数据库名" %
+                            self.output.good_print("恭喜大爷!!! 使用当前tamper:%s获得了当前url的数据库名" %
                                             tamper_string, 'red')
                             flag = 1
 
@@ -761,7 +765,7 @@ class Program(object):
 
                             db_name_list = self.get_db_name_from_log_file(self.log_file)
                             if db_name_list != 0 and db_name_list != []:
-                                self.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前url的数据库名" %
+                                self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前url的数据库名" %
                                                 tamper_string, 'red')
                                 flag = 1
                                 update_config_file_key_value(self.log_config_file, 'default',
@@ -782,7 +786,7 @@ class Program(object):
 
                             db_name_list = self.get_db_name_from_log_file(self.log_file)
                             if db_name_list != 0 and db_name_list != []:
-                                self.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前url的数据库名" %
+                                self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--hex选项获得了当前url的数据库名" %
                                                 tamper_string, 'red')
                                 flag = 1
                                 update_config_file_key_value(self.log_config_file, 'default',
@@ -803,7 +807,7 @@ class Program(object):
 
                                 db_name_list = self.get_db_name_from_log_file(self.log_file)
                                 if db_name_list != 0 and db_name_list != []:
-                                    self.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前url的数据库名" %
+                                    self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前url的数据库名" %
                                                     tamper_string, 'red')
                                     flag = 1
                                     update_config_file_key_value(
@@ -824,7 +828,7 @@ class Program(object):
 
                                 db_name_list = self.get_db_name_from_log_file(self.log_file)
                                 if db_name_list != 0 and db_name_list != []:
-                                    self.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前url的数据库名" %
+                                    self.output.good_print("恭喜大爷!!! 使用当前tamper:%s和--no-cast选项获得了当前url的数据库名" %
                                                     tamper_string, 'red')
                                     flag = 1
                                     update_config_file_key_value(
@@ -898,8 +902,8 @@ class Program(object):
         if forwhat == 'table_name':
             # 为了获取一个数据库的所有表名的值而运行的test_tamper_string
             flag = 0
-            self.good_print("现在尝试用tamper来获取当前数据库的表名...", 'green')
-            self.good_print("目前使用的tamper是%s" % tamper_string, 'green')
+            self.output.good_print("现在尝试用tamper来获取当前数据库的表名...", 'green')
+            self.output.good_print("目前使用的tamper是%s" % tamper_string, 'green')
             db_name = self.get_db_name_from_log_file(self.log_file)[0]
             if eval(get_key_value_from_config_file(self.log_config_file, 'default', 'hex_or_no_cast')) == []:
                 # 当前还没有获取--hex或者--no-cast选项
@@ -917,7 +921,7 @@ class Program(object):
 
                         table_name = self.get_table_name_from_log_file(self.log_file)
                         if table_name != 0 and table_name != "":
-                            self.good_print("恭喜大爷!!! 使用当前tamper:%s获得了当前数据库的表名" %
+                            self.output.good_print("恭喜大爷!!! 使用当前tamper:%s获得了当前数据库的表名" %
                                             tamper_string, 'red')
                             flag = 1
 
