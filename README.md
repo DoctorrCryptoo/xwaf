@@ -54,8 +54,15 @@
 3>need py3.5
 
 4>usage:
+	支持3种用法:
 	python3 xwaf.py "http://127.0.0.1/1.php?id=1"
-	过程中如果被中断了,接着再运行相同命令即可从断点附近接着暴
+		没有--proxy参数则不用代理
+	python3 xwaf.py "http://127.0.0.1/1.php?id=1" --proxy
+		有--proxy参数则用代理,每次执行新的sqlmap命令时自动切换从互联网上获取的代理
+	python3 xwaf.py
+		根据提示输入相关参数
+		
+	hint:过程中如果被中断了,接着再运行相同命令即可从断点附近接着暴
 
 5>xwaf运行完后将在/root/.sqlmap/output/127.0.0.1目录下的ini文件中看到相关信息,bypassed_command是成功暴破
   waf的sqlmap语句
@@ -68,6 +75,7 @@
 
 [2016-11-15]
 修复一处ACCESS数据库考虑不周全判断和几处good_print函数调用错误
+增加支持代理自动切换功能,自选，默认不用代理[用代理速度较慢]
 
 [2016-11-02]  
 增加access数据库特殊性的处理
@@ -79,5 +87,5 @@ eval(get_key_value_from_config_file(self.log_config_file,'default','db_type'))
 ### Todo
 
 1>特殊的access的entries获取的判断及退出[finished]  
-2>代理切换防封
+2>代理切换防封[finished]
 
