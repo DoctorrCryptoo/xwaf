@@ -25,16 +25,17 @@ class Program(object):
     def __init__(self):
         self.output = CLIOutput()
         self.try_times = 0
+        self.useProxy=False
         figlet2file("xwaf", 0, True)
         self.handle_url()
         self.log_file = "/root/.sqlmap/output/" + urlparse(self.url).hostname + "/log"
         self.log_config_file = self.log_file[:-3] + "config_file.ini"
         self.has_good_sqli_type = 0
-
+        #下面这句决定在全局是否加代理
+        self.output.useProxy=self.useProxy
         parsed = urlparse(self.url)
         safe_url = parsed.scheme + "://" + parsed.netloc
-        self.sm_command = '''sqlmap -u "%s" --batch -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3''' % (
-            self.url, safe_url)
+        self.sm_command = '''sqlmap -u "%s" --batch -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3''' % (self.url, safe_url)
         self.sm_hex_command = self.sm_command + " --hex"
         self.sm_no_cast_command = self.sm_command + " --no-cast"
         # 下面两句初始化产生的内容为hex_or_no_cast列表和tamper_list列表的配置文件
@@ -145,6 +146,9 @@ class Program(object):
                                    sys.argv[0], 'yellow')
             self.output.good_print('please input your url:>', 'yellow')
             self.url = input()
+            choose=input("do you want to use proxy? Y|N ? default[n]")
+            if choose=='y' or choose=='Y':
+                self.useProxy=True
         elif len(sys.argv) == 2:
             self.url = sys.argv[1]
             if re.match(r"http", self.url):
@@ -154,6 +158,10 @@ class Program(object):
                                        sys.argv[0], 'yellow')
                 print('please input your url:>')
                 self.url = input()
+        elif len(sys.argv)==3:
+            self.url=sys.argv[1]
+            if sys.argv[2]=="--proxy":
+                self.useProxy=True
 
     def get_db_type_from_log_file(self, log_file):
         with open(log_file, "r+") as f:
@@ -1298,7 +1306,7 @@ class Program(object):
             flag = 0
             self.output.good_print("现在尝试用tamper来获取当前数据库的表的列名的具体数据...", 'green')
             self.output.good_print("目前使用的tamper是%s" % tamper_string, 'green')
-            db_name = self.get_db_name_from_log_file(self.log_file)[0]
+            #db_name = self.get_db_name_from_log_file(self.log_file)[0]
             table_name = self.get_table_name_from_log_file(self.log_file)
             if eval(get_key_value_from_config_file(self.log_config_file, 'default', 'hex_or_no_cast')) == []:
                 # 当前还没有获取--hex或者--no-cast选项
