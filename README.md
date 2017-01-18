@@ -77,6 +77,7 @@
 ```
 [2017-01-18]
 fix line128处的slef改成self  
+fix line128处的db_name未定义错误
 
 [2016-11-15]
 修复一处ACCESS数据库考虑不周全判断和几处good_print函数调用错误
