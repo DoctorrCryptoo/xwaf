@@ -125,6 +125,7 @@ class Program(object):
             self.get_db_name_need_tamper()
 
         #下面在全局的sql注入语句中加入-D db_name[如果数据库不是ACCESS]
+        db_name = self.get_db_name_from_log_file(self.log_file)[0]
         self.sm_command= self.sm_command+" -D "+db_name if db_type!='ACCESS' else self.sm_command
         self.sm_hex_command = self.sm_command + " --hex"
         self.sm_no_cast_command = self.sm_command + " --no-cast"
