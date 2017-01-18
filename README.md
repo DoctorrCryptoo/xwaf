@@ -74,6 +74,7 @@
 
 ### Changelog
 
+```
 [2017-01-18]
 fix line128处的slef改成self  
 
@@ -87,6 +88,7 @@ fix line128处的slef改成self
 [2016-11-01]
 get_db_type_need_tamper之后的数据库类型获取由之前的get_db_type_from_log_file改成
 eval(get_key_value_from_config_file(self.log_config_file,'default','db_type'))
+```
 
 ### Todo
 
