@@ -11,6 +11,14 @@
 
 <a href="https://github.com/3xp10it/bypass_waf/blob/master/xwaf.py">xwaf</a>是一个python写的waf自动绕过工具,上一个版本是<a href="https://github.com/3xp10it/bypass_waf/blob/master/bypass_waf.py">bypass_waf</a>,xwaf相比bypass_waf更智能,可无人干预,自动暴破waf
 
+### Disclaimer
+
+```
+[!] legal disclaimer: Usage of 3xp10it.py and web.py for attacking targets without prior mutual consent is 
+illegal.It is the end user's responsibility to obey all applicable local, state and federal laws.Developers
+assume no liability and are not responsible for any misuse or damage caused by this program.
+```
+
 ### Usage
 
 ```
