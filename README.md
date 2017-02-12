@@ -11,6 +11,37 @@
 
 <a href="https://github.com/3xp10it/bypass_waf/blob/master/xwaf.py">xwaf</a>是一个python写的waf自动绕过工具,上一个版本是<a href="https://github.com/3xp10it/bypass_waf/blob/master/bypass_waf.py">bypass_waf</a>,xwaf相比bypass_waf更智能,可无人干预,自动暴破waf
 
+### Usage
+
+```
+eg:
+1.python3 xwaf.py -u "http://www.baidu.com/1.php?id=1"
+2.python3 xwaf.py -u "http://www.baidu.com/1.php" --data="postdata" -p xxx
+3.python3 xwaf.py -r /tmp/headerfile -p xxx --level 5
+```
+
+### Attention
+
+```
+1.xwaf支持除-m/-l外的所有sqlmap参数,用法和sqlmap一样即可,-m/-l为批量功能,暂不支持,如果需要批量,请自行code实现
+2.由于xwaf已经有比较好的参数方案,一般情况下尽量少用参数,如果有必须要用的参数除外[如--data/-p/-r]
+3.普通get类型注入点,这样用即可:
+  python3 xwaf.py -u "http://www.baidu.com/1.php?id=1&page=2" -p id
+4.人工输入的参数的优先级大于xwaf自带的参数方案
+5.关于--tamper参数的使用:
+  xwaf的主要功能是排列组合使用所有可能的tamper组合来爆破waf,如果人为使用了--tamper参数,xwaf将在人为设置的已有
+  tamper基础上再排列组合,eg.人为使用的命令为:
+  python3 xwaf.py -u "http://www.baidu.com/1.php?id=1" --tamper=space2comment
+  那么xwaf使用的tamper方案中的每个都会有space2comment
+6.关于代理的使用:
+  a)xwaf默认不用代理,如果使用代理需要在xwaf运行后选择y|Y
+  b)使用的代理来源于程序自动收集的网上的代理
+  c)使用代理有防封的优点,但网络连接速度不一定能保证
+
+7.need python3
+
+```
+
 ### 代码流程图:
 
 ```markdown
@@ -42,38 +73,30 @@
 	这个步骤,逐步获得最佳绕过waf的脚本组合
 ```
 
-### About:
+### About
 
 ```markdown
 1.xwaf支持记忆,运行中断后下次继续运行时会在中断时的最后一个命令附近继续跑,不会重新经历上面的所有函数的处理
+
+2.xwaf支持sqlmap除-m/-l外的所有参数用法
 
 2.各个get_xxx_need_tamper函数的处理采用针对当前url的数据库类型(eg.MySQL)的所有过waf的脚本
 (在sqlmap的tamper目录中)的排列组合的结果与--hex或--no-cast选项进行暴力破解如果--hex起作用了则不再使用
 --no-cast尝试,--no-cast起作用了也不再用--hex尝试
 
-3.need py3.5
-
-4.usage:
-	支持3种用法:
-	python3 xwaf.py "http://127.0.0.1/1.php?id=1"
-		没有--proxy参数则不用代理
-	python3 xwaf.py "http://127.0.0.1/1.php?id=1" --proxy
-		有--proxy参数则用代理,每次执行新的sqlmap命令时自动切换从互联网上获取的代理
-	python3 xwaf.py
-		根据提示输入相关参数
-		
-	hint:过程中如果被中断了,接着再运行相同命令即可从断点附近接着暴
-
-5.xwaf运行完后将在/root/.sqlmap/output/127.0.0.1目录下的ini文件中看到相关信息,bypassed_command是成功暴破
+3.xwaf运行完后将在/root/.sqlmap/output/127.0.0.1目录下的ini文件中看到相关信息,bypassed_command是成功暴破
   waf的sqlmap语句
 
-6.在tamper组合中,先用到的tamper会加入到上面的ini文件中,在以后的每个tamper组合中,综合已经得到的有用的
+4.在tamper组合中,先用到的tamper会加入到上面的ini文件中,在以后的每个tamper组合中,综合已经得到的有用的
   tamper再组合,在上面的ini文件中的tamper_list即为不断完善的tamper组合
 ```
 
 ### Changelog
 
 ```
+[2017-02-12] 
+更新支持所有sqlmap参数
+
 [2017-01-18]
 fix line128处的slef改成self  
 fix line128处的db_name未定义错误
@@ -94,5 +117,5 @@ eval(get_key_value_from_config_file(self.log_config_file,'default','db_type'))
 
 1.特殊的access的entries获取的判断及退出[finished]  
 2.代理切换防封[finished]
-3.目前只支持get类型注入的爆破,准备年后支持所有sqlmap参数[unfinished]
+3.目前只支持get类型注入的爆破,准备年后支持所有sqlmap参数[finished]
 
