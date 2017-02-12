@@ -24,7 +24,7 @@ eg:
 
 ```
 1.xwaf支持除-m/-l外的所有sqlmap参数,用法和sqlmap一样即可,-m/-l为批量功能,暂不支持,如果需要批量,请自行code实现
-2.由于xwaf已经有比较好的参数方案,一般情况下尽量少用参数,如果有必须要用的参数除外[如--data/-p/-r]
+2.由于xwaf已经有比较好的参数方案,一般情况下尽量少用参数,如果有必须要用的参数除外[如--data/-p/-r等参数]
 3.普通get类型注入点,这样用即可:
   python3 xwaf.py -u "http://www.baidu.com/1.php?id=1&page=2" -p id
 4.人工输入的参数的优先级大于xwaf自带的参数方案
@@ -37,7 +37,6 @@ eg:
   a)xwaf默认不用代理,如果使用代理需要在xwaf运行后选择y|Y
   b)使用的代理来源于程序自动收集的网上的代理
   c)使用代理有防封的优点,但网络连接速度不一定能保证
-
 7.need python3
 
 ```
@@ -77,17 +76,13 @@ eg:
 
 ```markdown
 1.xwaf支持记忆,运行中断后下次继续运行时会在中断时的最后一个命令附近继续跑,不会重新经历上面的所有函数的处理
-
 2.xwaf支持sqlmap除-m/-l外的所有参数用法
-
-2.各个get_xxx_need_tamper函数的处理采用针对当前url的数据库类型(eg.MySQL)的所有过waf的脚本
-(在sqlmap的tamper目录中)的排列组合的结果与--hex或--no-cast选项进行暴力破解如果--hex起作用了则不再使用
---no-cast尝试,--no-cast起作用了也不再用--hex尝试
-
-3.xwaf运行完后将在/root/.sqlmap/output/127.0.0.1目录下的ini文件中看到相关信息,bypassed_command是成功暴破
+3.各个get_xxx_need_tamper函数的处理采用针对当前url的数据库类型(eg.MySQL)的所有过waf的脚本
+  (在sqlmap的tamper目录中)的排列组合的结果与--hex或--no-cast选项进行暴力破解如果--hex起作用了则不再使用
+  --no-cast尝试,--no-cast起作用了也不再用--hex尝试
+4.xwaf运行完后将在/root/.sqlmap/output/127.0.0.1目录下的ini文件中看到相关信息,bypassed_command是成功暴破
   waf的sqlmap语句
-
-4.在tamper组合中,先用到的tamper会加入到上面的ini文件中,在以后的每个tamper组合中,综合已经得到的有用的
+5.在tamper组合中,先用到的tamper会加入到上面的ini文件中,在以后的每个tamper组合中,综合已经得到的有用的
   tamper再组合,在上面的ini文件中的tamper_list即为不断完善的tamper组合
 ```
 
