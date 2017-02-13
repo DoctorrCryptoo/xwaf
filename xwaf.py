@@ -23,7 +23,7 @@ except:
     from exp10it import get_input_intime
     from exp10it import get_http_or_https
 
-currentVersion=2.0
+currentVersion=1.1
 print("currentVersion:%s" % currentVersion)
 
 
