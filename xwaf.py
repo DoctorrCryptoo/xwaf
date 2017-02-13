@@ -157,15 +157,20 @@ class Program(object):
 
     def selfUpdate(self):
         #自动更新
+        def getVersion(file):
+            with open("/tmp/xwaf.py","r+") as f:
+                content=f.read()
+            latestVersion=re.search(r"currentVersion=(.*)",content).group(1)
+            latestVersion=float(latestVersion)
+            return latestVersion
+
         os.system("wget https://raw.githubusercontent.com/3xp10it/bypass_waf/master/xwaf.py -O /tmp/xwaf.py -q")
-        with open("/tmp/xwaf.py","r+") as f:
-            content=f.read()
-        latestVersion=re.search(r"currentVersion=(.*)",content).group(1)
-        latestVersion=float(latestVersion)
+        latestVersion=getVersion("/tmp/xwaf.py")
         if latestVersion>currentVersion:
             print("Attention! New version exists,I will update xwaf.py to the latest version.")
-            os.system("cp /tmp/xwaf.py xwaf.py")
-            #print("Update finished! Please run it again:)")
+            currentScriptDirPath=os.path.dirname(os.path.abspath(__file__))+'/'
+            os.system("cp /tmp/xwaf.py %sxwaf.py" % currentScriptDirPath)
+            print("Update finished! :)")
             oldArgvList=sys.argv[1:]
             newString=""
             for each in oldArgvList:
