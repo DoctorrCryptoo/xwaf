@@ -179,7 +179,7 @@ class Program(object):
                 else:
                     newString+=(" "+each)
 
-            newCommand="python3 %sxwaf.py" % currentScriptDirPath+newString
+            newCommand="python3 "+currentScriptDirPath+newString+"xwaf.py"+newString
             print("new cmd:\n"+newCommand)
             os.system(newCommand)
             sys.exit(0)
