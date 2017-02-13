@@ -47,6 +47,8 @@ def selfUpdate():
         newCommand="python3 xwaf.py"+newString
         print("new cmd:\n"+newCommand)
         os.system(newCommand)
+    else:
+        return
 
 
 class Program(object):
