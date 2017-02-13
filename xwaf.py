@@ -26,31 +26,6 @@ except:
 currentVersion=2.0
 print("currentVersion:%s" % currentVersion)
 
-def selfUpdate():
-    #自动更新
-    os.system("wget https://raw.githubusercontent.com/3xp10it/bypass_waf/master/xwaf.py -O /tmp/xwaf.py -q")
-    with open("/tmp/xwaf.py","r+") as f:
-        content=f.read()
-    latestVersion=re.search(r"currentVersion=(.*)",content).group(1)
-    latestVersion=float(latestVersion)
-    if latestVersion>currentVersion:
-        print("Attention! New version exists,I will update xwaf.py to the latest version.")
-        os.system("cp /tmp/xwaf.py xwaf.py")
-        print("Update finished!")
-        oldArgvList=sys.argv[1:]
-        newString=""
-        for each in oldArgvList:
-            if re.search(r"\s",each):
-                newString+=(" "+'"'+each+'"')
-            else:
-                newString+=(" "+each)
-        newCommand="python3 xwaf.py"+newString
-        print("new cmd:\n"+newCommand)
-        input(66666666666)
-        os.system(newCommand)
-    else:
-        return
-
 
 class Program(object):
 
@@ -198,7 +173,10 @@ class Program(object):
                     newString+=(" "+'"'+each+'"')
                 else:
                     newString+=(" "+each)
-            os.system("python3 xwaf.py"+newString)
+
+            newCommand="python3 xwaf.py"+newString
+            print("new cmd:\n"+newCommand)
+            os.system(newCommand)
             sys.exit(0)
         else:
             return
