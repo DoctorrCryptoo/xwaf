@@ -36,7 +36,7 @@ def selfUpdate():
     if latestVersion>currentVersion:
         print("Attention! New version exists,I will update xwaf.py to the latest version.")
         os.system("cp /tmp/xwaf.py xwaf.py")
-        #print("Update finished! Please run it again:)")
+        print("Update finished!")
         oldArgvList=sys.argv[1:]
         newString=""
         for each in oldArgvList:
@@ -44,7 +44,9 @@ def selfUpdate():
                 newString+=(" "+'"'+each+'"')
             else:
                 newString+=(" "+each)
-        os.system("python3 xwaf.py"+newString)
+        newCommand="python3 xwaf.py"+newString
+        print("new cmd:\n"+newCommand)
+        os.system(newCommand)
 
 
 class Program(object):
