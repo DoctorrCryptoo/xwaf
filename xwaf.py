@@ -23,10 +23,34 @@ except:
     from exp10it import get_input_intime
     from exp10it import get_http_or_https
 
+currentVersion=2.0
+print("currentVersion:%s" % currentVersion)
+
+def selfUpdate():
+    #自动更新
+    os.system("wget https://raw.githubusercontent.com/3xp10it/bypass_waf/master/xwaf.py -O /tmp/xwaf.py -q")
+    with open("/tmp/xwaf.py","r+") as f:
+        content=f.read()
+    latestVersion=re.search(r"currentVersion=(.*)",content).group(1)
+    latestVersion=float(latestVersion)
+    if latestVersion>currentVersion:
+        print("Attention! New version exists,I will update xwaf.py to the latest version.")
+        os.system("cp /tmp/xwaf.py xwaf.py")
+        #print("Update finished! Please run it again:)")
+        oldArgvList=sys.argv[1:]
+        newString=""
+        for each in oldArgvList:
+            if re.search(r"\s",each):
+                newString+=(" "+'"'+each+'"')
+            else:
+                newString+=(" "+each)
+        os.system("python3 xwaf.py"+newString)
+
 
 class Program(object):
 
     def __init__(self):
+        self.selfUpdate()
         self.output = CLIOutput()
         self.try_times = 0
         #rflag为1代表sqlmap的参数中有-r选项
@@ -149,6 +173,31 @@ class Program(object):
             self.output.good_print("成功获取数据的命令是:\n%s" % succeedCmd, 'red')
 
         self.output.good_print('you tried %d times' % self.try_times, 'red')
+
+
+    def selfUpdate(self):
+        #自动更新
+        os.system("wget https://raw.githubusercontent.com/3xp10it/bypass_waf/master/xwaf.py -O /tmp/xwaf.py -q")
+        with open("/tmp/xwaf.py","r+") as f:
+            content=f.read()
+        latestVersion=re.search(r"currentVersion=(.*)",content).group(1)
+        latestVersion=float(latestVersion)
+        if latestVersion>currentVersion:
+            print("Attention! New version exists,I will update xwaf.py to the latest version.")
+            os.system("cp /tmp/xwaf.py xwaf.py")
+            #print("Update finished! Please run it again:)")
+            oldArgvList=sys.argv[1:]
+            newString=""
+            for each in oldArgvList:
+                if re.search(r"\s",each):
+                    newString+=(" "+'"'+each+'"')
+                else:
+                    newString+=(" "+each)
+            os.system("python3 xwaf.py"+newString)
+            sys.exit(0)
+        else:
+            return
+
 
 
     def handle_url(self):
@@ -330,7 +379,7 @@ blocked by waf for your mass requests? [N|y]")
         # 找出entries,不用找出entries的具体值,只要log文件中有entries出现即可
         with open(log_file, "r+") as f:
             log_content = f.read()
-        find_entries = re.search(r"\[(\d{1,3}) entries\]", log_content)
+        find_entries = re.search(r"\[(\d{1,3} entries)|(1 entry)\]", log_content)
         if find_entries:
             return 1
         else:
