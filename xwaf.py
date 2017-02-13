@@ -52,17 +52,11 @@ class Program(object):
 
         self.sm_hex_command = self.sm_command + " --hex"
         self.sm_no_cast_command = self.sm_command + " --no-cast"
-        # 下面两句初始化产生的内容为hex_or_no_cast列表和tamper_list列表的配置文件
+        '''
         if os.path.exists(self.log_file[:-4]) == False:
             self.output.good_print("警告!!!这个url还没用sqlmap跑过,请先用sqlmap跑它,在下的用途是过waf,在下将现在将退出!")
             sys.exit(1)
-        update_config_file_key_value(self.log_config_file, 'default', 'hex_or_no_cast', [])
-        update_config_file_key_value(self.log_config_file, 'default', 'tamper_list', [])
-        # 下面这个列表是跑过的命令,每次跑一个命令时,先检测这个命令是否在下面这个列表中,如果在,说明这个命令跑过了,略过这
-        # 个要跑的命令
-        update_config_file_key_value(self.log_config_file, 'default', 'finished_command_list', [])
-        # 下面这个列表是成功绕过的命令
-        update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [])
+        '''
         self.MYSQL = []
         self.MSSQL = []
         self.ORACLE = []
@@ -104,14 +98,30 @@ class Program(object):
         print('hsqldb:')
         print(self.HSQLDB)
 
-        if os.path.exists(self.log_file) == False:
+        if os.path.exists(self.log_config_file)==False:
+            #log_config_file不存在,说明xwaf没跑过,开始时用sm_command跑,生成log_config_file,并将当前跑过的命令记录下来
+            self.output.os_system_combine_argv_with_bottom_status(self.sm_command)
+
+            # 下面这个列表是跑过的命令,每次跑一个命令时,先检测这个命令是否在下面这个列表中,如果在,说明这个命令跑过了,略过这
+            # 个要跑的命令
+            update_config_file_key_value(self.log_config_file, 'default', 'finished_command_list', [])
+            # 下面这个列表是成功绕过的命令
+            update_config_file_key_value(self.log_config_file, 'default', 'bypassed_command', [])
+            # 下面两句初始化产生的内容为hex_or_no_cast列表和tamper_list列表的配置文件
+            update_config_file_key_value(self.log_config_file, 'default', 'hex_or_no_cast', [])
+            update_config_file_key_value(self.log_config_file, 'default', 'tamper_list', [])
+
+            current_finished_command_list=[self.sm_command]
+        else:
+            #log_config_file存在,说明xwaf跑过,开始时用sm_command跑,并将当前跑过的命令记录下来
             current_finished_command_list = eval(get_key_value_from_config_file(self.log_config_file, 'default', 'finished_command_list'))
             if self.sm_command in current_finished_command_list:
                 pass
             else:
                 self.output.os_system_combine_argv_with_bottom_status(self.sm_command)
                 current_finished_command_list.append(self.sm_command)
-                update_config_file_key_value(self.log_config_file, 'default','finished_command_list', current_finished_command_list)
+        update_config_file_key_value(self.log_config_file, 'default','finished_command_list', current_finished_command_list)
+
         has_sqli = self.get_log_file_need_tamper()
         if has_sqli == 0:
             # 如果没有漏洞就不再进行后面的检测了
@@ -152,7 +162,7 @@ class Program(object):
             succeedCmd=eval(get_key_value_from_config_file(self.log_config_file, 'default', 'bypassed_command'))
             self.output.good_print("成功获取数据的命令是:\n%s" % succeedCmd, 'red')
 
-        self.output.good_print('you tried %d times' % self.try_times, 'red')
+        self.output.good_print('you tried %d different combination of tampers' % self.try_times, 'red')
 
 
     def selfUpdate(self):
@@ -179,8 +189,8 @@ class Program(object):
                 else:
                     newString+=(" "+each)
 
-            newCommand="python3 "+currentScriptDirPath+"xwaf.py"+newString
-            print("new cmd:\n"+newCommand)
+            newCommand="python3 "+currentScriptDirPath+newString+"xwaf.py"+newString
+            #print("new cmd:\n"+newCommand)
             os.system(newCommand)
             sys.exit(0)
         else:
