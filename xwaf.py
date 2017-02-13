@@ -46,6 +46,7 @@ def selfUpdate():
                 newString+=(" "+each)
         newCommand="python3 xwaf.py"+newString
         print("new cmd:\n"+newCommand)
+        input(66666666666)
         os.system(newCommand)
     else:
         return
