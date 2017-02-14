@@ -205,8 +205,8 @@ eg:
 2.python3 xwaf.py -u "http://www.baidu.com/1.php" --data="postdata" -p xxx
 3.python3 xwaf.py -r /tmp/headerfile -p xxx --level 5
 
-Actually,xwaf.py supports all parameters[except for param '-m' and '-l'] in sqlmap,you can use xwaf as the same
-to sqlmap.''','yellow')
+Actually,xwaf.py supports all parameters[except for param '-m' and '-l'] in sqlmap,you can use xwaf as same as
+sqlmap's usage.''','yellow')
 
     def handle_url(self):
         if len(sys.argv) == 1:
