@@ -39,17 +39,13 @@ class Program(object):
         parsed = urlparse(self.url)
         safe_url = parsed.scheme + "://" + parsed.netloc
         if self.rflag==0:
-            self.sm_command = '''sqlmap -u "%s" --batch -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3''' % (self.url, safe_url)
+            self.sm_command = '''sqlmap -u "%s" --batch -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3 --smart''' % (self.url, safe_url)
         else:
-            self.sm_command = '''sqlmap --batch -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3''' % safe_url
+            self.sm_command = '''sqlmap --batch -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3 --smart''' % safe_url
 
         self.sm_hex_command = self.sm_command + " --hex"
         self.sm_no_cast_command = self.sm_command + " --no-cast"
-        '''
-        if os.path.exists(self.log_file[:-4]) == False:
-            self.output.good_print("警告!!!这个url还没用sqlmap跑过,请先用sqlmap跑它,在下的用途是过waf,在下将现在将退出!")
-            sys.exit(1)
-        '''
+
         self.MYSQL = []
         self.MSSQL = []
         self.ORACLE = []
