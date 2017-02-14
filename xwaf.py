@@ -16,8 +16,6 @@ from exp10it import CLIOutput
 from exp10it import get_input_intime
 from exp10it import get_http_or_https
 
-currentVersion=1.1
-print("currentVersion:%s" % currentVersion)
 
 
 class Program(object):
@@ -30,6 +28,8 @@ class Program(object):
         self.rflag=0
         self.useProxy=False
         figlet2file("xwaf", 0, True)
+        self.currentVersion=1.1
+        print("currentVersion:%s" % self.currentVersion)
         self.handle_url()
         self.log_file = "/root/.sqlmap/output/" + urlparse(self.url).hostname + "/log"
         self.log_config_file = self.log_file[:-3] + "config_file.ini"
@@ -159,13 +159,13 @@ class Program(object):
         def getVersion(file):
             with open("/tmp/xwaf.py","r+") as f:
                 content=f.read()
-            latestVersion=re.search(r"currentVersion=(.*)",content).group(1)
+            latestVersion=re.search(r"self\.currentVersion\s*=\s*(.*)",content).group(1)
             latestVersion=float(latestVersion)
             return latestVersion
 
         os.system("wget https://raw.githubusercontent.com/3xp10it/bypass_waf/master/xwaf.py -O /tmp/xwaf.py -q")
         latestVersion=getVersion("/tmp/xwaf.py")
-        if latestVersion>currentVersion:
+        if latestVersion>self.currentVersion:
             print("Attention! New version exists,I will update xwaf.py to the latest version.")
             currentScriptDirPath=os.path.dirname(os.path.abspath(__file__))+'/'
             os.system("cp /tmp/xwaf.py %sxwaf.py" % currentScriptDirPath)
