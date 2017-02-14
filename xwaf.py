@@ -198,15 +198,24 @@ class Program(object):
 
 
 
+    def usage(self):
+        self.output.good_print('''You can use this script like this:
+eg:
+1.python3 xwaf.py -u "http://www.baidu.com/1.php?id=1"
+2.python3 xwaf.py -u "http://www.baidu.com/1.php" --data="postdata" -p xxx
+3.python3 xwaf.py -r /tmp/headerfile -p xxx --level 5
+
+Actually,xwaf.py supports all parameters[except for param '-m' and '-l'] in sqlmap,you can use xwaf as the same
+to sqlmap.''','yellow')
+
     def handle_url(self):
         if len(sys.argv) == 1:
-            self.output.good_print('''You can use this script like this:\neg."python3 xwaf.py -u \
-"https://www.baidu.com/index.php?id=1"\nActually,xwaf.py supports all parameters in sqlmap,you can use \
-it like sqlmap.''','yellow')
-            sys.exit(1)
+            usage()
+            sys.exit(0)
         else:
             if "-m" in sys.argv[1:] or "-l" in sys.argv[1:]:
                 print("Sorry,xwaf.py does not support param '-m' and '-l'")
+                self.usage()
                 sys.exit(1)
 
             print("Do you want to use random proxy from the Internet on each different sqlmap command to anti \
@@ -247,6 +256,7 @@ blocked by waf for your mass requests? [N|y]")
                         sys.exit(1)
                 else:
                     print("Sorry,I can not find a url:(")
+                    self.usage()
                     sys.exit(1)
 
 
