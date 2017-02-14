@@ -1,4 +1,5 @@
 
+
 <pre>
 <strong>
 										   _  ___      _____   ____
@@ -18,6 +19,33 @@
 [!] legal disclaimer: Usage of 3xp10it.py and web.py for attacking targets without prior mutual consent is 
 illegal.It is the end user's responsibility to obey all applicable local, state and federal laws.Developers
 assume no liability and are not responsible for any misuse or damage caused by this program.
+```
+
+### Requirement
+
+```
+python3
+pip3
+works on linux(test on ubuntu and kali2.0,others not test)
+
+python3安装可参考如下步骤:
+    apt-get install python3
+    或:
+    wget https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tar.xz
+    tar xJf Python-3.5.2.tar.xz
+    cd Python-3.5.2
+    ./configure --prefix=/opt/python3
+    make && make install
+    ln -s /opt/python3/bin/python3.5 /usr/local/bin/python3
+
+pip3安装:
+apt-get install -y python3-pip
+
+kali linux2安装pip3可参考如下步骤:
+    echo "deb-src http://http.kali.org/kali kali main non-free contrib" >> /etc/apt/sources.list
+    echo "deb-src http://security.kali.org/kali-security kali/updates main contrib non-free" >> /etc/apt/sources.list
+    apt-get update
+    apt-get install python3-pip
 ```
 
 ### Usage
