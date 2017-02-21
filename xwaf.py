@@ -21,6 +21,7 @@ from exp10it import get_http_or_https
 class Program(object):
 
     def __init__(self):
+        self.currentVersion=1.1
         self.selfUpdate()
         self.output = CLIOutput()
         self.try_times = 0
@@ -28,7 +29,6 @@ class Program(object):
         self.rflag=0
         self.useProxy=False
         figlet2file("xwaf", 0, True)
-        self.currentVersion=1.1
         print("currentVersion:%s" % self.currentVersion)
         self.handle_url()
         self.log_file = "/root/.sqlmap/output/" + urlparse(self.url).hostname + "/log"
