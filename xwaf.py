@@ -21,7 +21,7 @@ from exp10it import get_http_or_https
 class Program(object):
 
     def __init__(self):
-        self.currentVersion=1.1
+        self.currentVersion=1.11
         self.selfUpdate()
         self.output = CLIOutput()
         self.try_times = 0
@@ -199,7 +199,7 @@ sqlmap's usage.''','yellow')
 
     def handle_url(self):
         if len(sys.argv) == 1:
-            usage()
+            self.usage()
             sys.exit(0)
         else:
             if "-m" in sys.argv[1:] or "-l" in sys.argv[1:]:
