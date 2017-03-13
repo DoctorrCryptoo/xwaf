@@ -9,9 +9,12 @@ if sys.version_info < (3, 0):
     sys.exit(1)
 
 os.system("pip3 install exp10it -U --no-cache")
+print("111111111111")
 from exp10it import figlet2file
+print("2222222222222")
 from exp10it import update_config_file_key_value
 from exp10it import get_key_value_from_config_file
+print("3333333333333")
 from exp10it import CLIOutput
 from exp10it import get_input_intime
 from exp10it import get_http_or_https
@@ -31,7 +34,7 @@ class Program(object):
         figlet2file("xwaf", 0, True)
         print("currentVersion:%s" % self.currentVersion)
         self.handle_url()
-        self.log_file = "/root/.sqlmap/output/" + urlparse(self.url).hostname + "/log"
+        self.log_file = "~/.sqlmap/output/" + urlparse(self.url).hostname + "/log"
         self.log_config_file = self.log_file[:-3] + "config_file.ini"
         self.has_good_sqli_type = 0
         #下面这句决定在全局是否加代理
