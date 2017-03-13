@@ -9,12 +9,9 @@ if sys.version_info < (3, 0):
     sys.exit(1)
 
 os.system("pip3 install exp10it -U --no-cache")
-print("111111111111")
 from exp10it import figlet2file
-print("2222222222222")
 from exp10it import update_config_file_key_value
 from exp10it import get_key_value_from_config_file
-print("3333333333333")
 from exp10it import CLIOutput
 from exp10it import get_input_intime
 from exp10it import get_http_or_https
