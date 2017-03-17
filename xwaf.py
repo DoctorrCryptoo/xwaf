@@ -15,13 +15,13 @@ from exp10it import get_key_value_from_config_file
 from exp10it import CLIOutput
 from exp10it import get_input_intime
 from exp10it import get_http_or_https
-
+from exp10it import homePath
 
 
 class Program(object):
 
     def __init__(self):
-        self.currentVersion=1.11
+        self.currentVersion=1.12
         self.selfUpdate()
         self.output = CLIOutput()
         self.try_times = 0
@@ -31,7 +31,7 @@ class Program(object):
         figlet2file("xwaf", 0, True)
         print("currentVersion:%s" % self.currentVersion)
         self.handle_url()
-        self.log_file = "~/.sqlmap/output/" + urlparse(self.url).hostname + "/log"
+        self.log_file = homePath+"/.sqlmap/output/" + urlparse(self.url).hostname + "/log"
         self.log_config_file = self.log_file[:-3] + "config_file.ini"
         self.has_good_sqli_type = 0
         #下面这句决定在全局是否加代理
