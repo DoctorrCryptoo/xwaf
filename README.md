@@ -1,9 +1,9 @@
-<pre style="float:left;margin:0 auto">
+<pre style="float:left;margin:0 auto;width:500px">
 <strong>
 		   _  ___      _____   ____              
-		  | |/_/ | /| / / _ | / __/                             
+		  | |/_/ | /| / / _ | / __/             
 		 _.  < | |/ |/ / __ |/ _/               
-		/_/|_| |__/|__/_/ |_/_/                
+		/_/|_| |__/|__/_/ |_/_/                 
 </strong>
 </pre>
 
