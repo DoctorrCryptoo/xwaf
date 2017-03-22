@@ -1,6 +1,4 @@
 
-
-
 <pre>
 <strong>
 										   _  ___      _____   ____
@@ -169,5 +167,4 @@ eval(get_key_value_from_config_file(self.log_config_file,'default','db_type'))
 2.代理切换防封[finished]
 3.目前只支持get类型注入的爆破,准备年后支持所有sqlmap参数[finished]
 ```
-
 
