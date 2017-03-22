@@ -1,4 +1,4 @@
-<style>
+<style type="text/css">
 #PRE_1 {
     box-sizing: border-box;
     color: rgb(255, 255, 255);
