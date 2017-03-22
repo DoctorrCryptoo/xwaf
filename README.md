@@ -1,10 +1,12 @@
 <div style="text-align:center">
+<pre>
 <strong>
 										   _  ___      _____   ____
 										  | |/_/ | /| / / _ | / __/
 										 _.  < | |/ |/ / __ |/ _/  
 										/_/|_| |__/|__/_/ |_/_/ 
 </strong>
+</pre>
 </div>
 
 # xwaf
