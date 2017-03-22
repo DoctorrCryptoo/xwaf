@@ -1,5 +1,50 @@
-<pre style="text-align:center">
-<strong>
+#PRE_1 {
+    box-sizing: border-box;
+    color: rgb(255, 255, 255);
+    height: 229px;
+    overflow-wrap: break-word;
+    text-align: center;
+    text-decoration: none solid rgb(255, 255, 255);
+    width: 640px;
+    word-break: break-all;
+    word-wrap: break-word;
+    column-rule-color: rgb(255, 255, 255);
+    perspective-origin: 320px 114.5px;
+    transform-origin: 320px 114.5px;
+    caret-color: rgb(255, 255, 255);
+    border: 0px solid rgb(204, 204, 204);
+    border-radius: 4px 4px 4px 4px;
+    font: normal normal 300 normal 15px / 21.4286px WenQuanYi_Zen_H97fe618b716dce;
+    margin: 0px 0px 10px;
+    outline: rgb(255, 255, 255) none 0px;
+    overflow: auto;
+    padding: 9.5px;
+}/*#PRE_1*/
+
+#STRONG_2 {
+    box-sizing: border-box;
+    color: rgb(255, 255, 255);
+    overflow-wrap: break-word;
+    text-align: center;
+    text-decoration: none solid rgb(255, 255, 255);
+    white-space: pre;
+    word-break: break-all;
+    word-wrap: break-word;
+    column-rule-color: rgb(255, 255, 255);
+    caret-color: rgb(255, 255, 255);
+    border: 0px none rgb(255, 255, 255);
+    font: normal normal bold normal 15px / 21.4286px WenQuanYi_Zen_H97fe618b716dce;
+    outline: rgb(255, 255, 255) none 0px;
+}/*#STRONG_2*/
+
+
+
+
+
+
+
+
+<pre id="PRE_1"><strong id="STRONG_2">
    _  ___      _____   ____
   | |/_/ | /| / / _ | / __/
  _.  < | |/ |/ / __ |/ _/
