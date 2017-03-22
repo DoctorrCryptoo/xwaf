@@ -170,3 +170,4 @@ eval(get_key_value_from_config_file(self.log_config_file,'default','db_type'))
 3.目前只支持get类型注入的爆破,准备年后支持所有sqlmap参数[finished]
 ```
 
+
