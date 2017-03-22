@@ -1,4 +1,4 @@
-<pre style="margin:0 auto;width:500px;">
+<pre>
 <strong>
            _  ___      _____   ____
           | |/_/ | /| / / _ | / __/
