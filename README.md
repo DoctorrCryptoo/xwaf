@@ -1,5 +1,4 @@
-<style type="text/css">
-#PRE_1 {
+<pre style="
     box-sizing: border-box;
     color: rgb(255, 255, 255);
     height: 229px;
@@ -20,9 +19,10 @@
     outline: rgb(255, 255, 255) none 0px;
     overflow: auto;
     padding: 9.5px;
-}/*#PRE_1*/
+    ">
 
-#STRONG_2 {
+
+<strong style="
     box-sizing: border-box;
     color: rgb(255, 255, 255);
     overflow-wrap: break-word;
@@ -36,12 +36,8 @@
     border: 0px none rgb(255, 255, 255);
     font: normal normal bold normal 15px / 21.4286px WenQuanYi_Zen_H97fe618b716dce;
     outline: rgb(255, 255, 255) none 0px;
-}/*#STRONG_2*/
-</style>
+    ">
 
-
-
-<pre id="PRE_1"><strong id="STRONG_2">
    _  ___      _____   ____
   | |/_/ | /| / / _ | / __/
  _.  < | |/ |/ / __ |/ _/
