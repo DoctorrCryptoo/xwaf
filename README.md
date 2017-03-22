@@ -1,5 +1,4 @@
-<div style="text-align:center;margin-left:auto;margin-right:auto;width:168px">
-<pre>
+<pre style="float:left;margin:0 auto">
 <strong>
 		   _  ___      _____   ____                             
 		  | |/_/ | /| / / _ | / __/                             
@@ -7,7 +6,6 @@
 		/_/|_| |__/|__/_/ |_/_/                              
 </strong>
 </pre>
-</div>
 
 # xwaf
 
