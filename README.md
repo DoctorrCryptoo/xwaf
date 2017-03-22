@@ -1,4 +1,4 @@
-<div style="text-align:center">
+<div style="text-align:center;margin-left:auto;margin-right:auto;width:168px">
 <pre>
 <strong>
 										   _  ___      _____   ____
