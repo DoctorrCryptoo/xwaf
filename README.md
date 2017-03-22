@@ -1,4 +1,4 @@
-<pre>
+<pre style="text-align:center">
 <strong>
    _  ___      _____   ____
   | |/_/ | /| / / _ | / __/
