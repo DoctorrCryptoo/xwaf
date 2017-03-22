@@ -1,3 +1,4 @@
+<style>
 #PRE_1 {
     box-sizing: border-box;
     color: rgb(255, 255, 255);
@@ -36,11 +37,7 @@
     font: normal normal bold normal 15px / 21.4286px WenQuanYi_Zen_H97fe618b716dce;
     outline: rgb(255, 255, 255) none 0px;
 }/*#STRONG_2*/
-
-
-
-
-
+</style>
 
 
 
