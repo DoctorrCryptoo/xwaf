@@ -1,7 +1,7 @@
 <pre style="box-sizing: border-box;color: rgb(255, 255, 255);height: 229px;overflow-wrap: break-word;text-align: center;text-decoration: none solid rgb(255, 255, 255);width: 640pxword-break: break-allword-wrap: break-wordcolumn-rule-color: rgb(255, 255, 255)perspective-origin: 320px 114.5pxtransform-origin: 320px 114.5pxcaret-color: rgb(255, 255, 255)border: 0px solid rgb(204, 204, 204)border-radius: 4px 4px 4px 4pxfont: normal normal 300 normal 15px / 21.4286px WenQuanYi_Zen_H97fe618b716dcemargin: 0px 0px 10pxoutline: rgb(255, 255, 255) none 0px;overflow: auto;padding: 9.5px;">
 
 
-<strong style="box-sizing: border-box;color: rgb(255, 255, 255);overflow-wrap: break-word;text-align: centertext-decoration: none solid rgb(255, 255, 255)white-space: preword-break: break-allword-wrap: break-wordcolumn-rule-color: rgb(255, 255, 255)caret-color: rgb(255, 255, 255)border: 0px none rgb(255, 255, 255)font: normal normal bold normal 15px / 21.4286px WenQuanYi_Zen_H97fe618b716dceoutline: rgb(255, 255, 255) none 0px;">
+<strong style="box-sizing: border-box;color: rgb(255, 255, 255);overflow-wrap: break-word;text-align: center;text-decoration: none solid rgb(255, 255, 255);white-space: pre;word-break: break-all;word-wrap: break-wordcolumn-rule-color: rgb(255, 255, 255);caret-color: rgb(255, 255, 255);border: 0px none rgb(255, 255, 255);outline: rgb(255, 255, 255) none 0px;">
 
 
  _   _  ___  _           _____ 
