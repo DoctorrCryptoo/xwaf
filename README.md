@@ -1,11 +1,11 @@
-<pre style="display:inline-block">
+<textarea style="display:inline-block">
 <strong>
    _  ___      _____   ____
   | |/_/ | /| / / _ | / __/
  _.  < | |/ |/ / __ |/ _/
 /_/|_| |__/|__/_/ |_/_/
 </strong>
-</pre>
+</textarea>
 
 # xwaf
 
