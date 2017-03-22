@@ -1,10 +1,10 @@
 <div style="text-align:center;margin-left:auto;margin-right:auto;width:168px">
 <pre>
 <strong>
-						   _  ___      _____   ____                             
-						  | |/_/ | /| / / _ | / __/                             
-						 _.  < | |/ |/ / __ |/ _/                                
-						/_/|_| |__/|__/_/ |_/_/                              
+		   _  ___      _____   ____                             
+		  | |/_/ | /| / / _ | / __/                             
+		 _.  < | |/ |/ / __ |/ _/                                
+		/_/|_| |__/|__/_/ |_/_/                              
 </strong>
 </pre>
 </div>
