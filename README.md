@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/3xp10it/pic/master/xwafLogo.png">
+<img src="https://raw.githubusercontent.com/3xp10it/pic/master/xwafWhite.png">
 
 # xwaf
 
