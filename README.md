@@ -1,11 +1,3 @@
-<pre>
-<strong>
-                                       _  ___      _____   ____
-                                      | |/_/ | /| / / _ | / __/
-                                     _.  < | |/ |/ / __ |/ _/
-                                    /_/|_| |__/|__/_/ |_/_/
-</strong>
-</pre>
 <img src="https://raw.githubusercontent.com/3xp10it/pic/master/xwafLogo.png">
 
 # xwaf
