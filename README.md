@@ -1,3 +1,4 @@
+
 <img src="https://raw.githubusercontent.com/3xp10it/pic/master/xwafWhite.png">
 
 # xwaf
@@ -118,6 +119,9 @@ eg:
 ### Changelog
 
 ```
+[2017-04-27]
+修复复杂参数没有双引号包含的错误
+
 [2017-03-13]
 修复要输入bing api key的问题
 
