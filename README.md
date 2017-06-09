@@ -131,7 +131,7 @@ eg:
 [2016-11-15] 增加支持代理自动切换功能,自选，默认不用代理[用代理速度较慢]
 [2016-11-02] 增加access数据库特殊性的处理
 [2016-11-01] get_db_type_need_tamper之后的数据库类型获取由之前的get_db_type_from_log_file改成
-			 eval(get_key_value_from_config_file(self.log_config_file,'default','db_type'))
+             eval(get_key_value_from_config_file(self.log_config_file,'default','db_type'))
 ```
 
 ### Todo
