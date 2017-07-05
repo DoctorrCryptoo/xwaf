@@ -16,13 +16,22 @@ from exp10it import CLIOutput
 from exp10it import get_input_intime
 from exp10it import get_http_or_https
 from exp10it import homePath
+from exp10it import get_string_from_command
+from exp10it import get_request
 
 
 class Program(object):
 
     def __init__(self):
-        self.currentVersion=1.12
+        self.currentVersion=1.13
+        a=get_string_from_command("sqlmap")
+        if not os.path.exists("/usr/share/sqlmap/sqlmap.py"):
+            os.system("git clone https://github.com/sqlmapproject/sqlmap.git /usr/share/sqlmap")
+        if re.search(r"not found",a,re.I):
+            os.system("ln -s /usr/share/sqlmap/sqlmap.py /usr/local/bin/sqlmap")
+
         self.selfUpdate()
+        self.checkSqlmapTamperUpdate()
         self.output = CLIOutput()
         self.try_times = 0
         #rflag为1代表sqlmap的参数中有-r选项
@@ -185,6 +194,27 @@ class Program(object):
         else:
             return
 
+    def checkSqlmapTamperUpdate(self):
+        #检测sqlmap的tamper有没有更新,如果有更新则自动更新
+        req=get_request("https://github.com/sqlmapproject/sqlmap/tree/master/tamper")
+        html=req['content']
+        a=re.findall(r"\w+\.py",html)
+        allTamperNameList=[]
+        for each in a:
+            if each not in allTamperNameList and each!="__init__.py":
+                allTamperNameList.append(each)
+        newTamperNum=len(allTamperNameList)
+
+        tamperList=os.listdir("/usr/share/sqlmap/tamper")
+        localTamperNum=len(tamperList)
+        #print(localTamperNum)
+        if "__init__.py" in tamperList:
+            localTamperNum-=1
+
+        if newTamperNum>localTamperNum:
+            print("检测到sqlmap的tamper有更新,现在更新,请稍等...")
+            os.system("rm -r /usr/share/sqlmap")
+            os.system("git clone https://github.com/sqlmapproject/sqlmap.git /usr/share/sqlmap")
 
 
     def usage(self):
