@@ -119,6 +119,8 @@ eg:
 ### Changelog
 
 ```
+[2017-07-05] 更新支持根据github上的sqlmap的tamper的更新情况自动更新tamper[sqlmap]
+[2017-07-05] 添加支持检测系统有没有将sqlmap添加到path中,如果没有则自动添加
 [2017-04-27] 修复复杂参数没有双引号包含的错误
 [2017-03-13] 修复要输入bing api key的问题
 [2017-02-23] 修复一处usage函数调用失败
@@ -126,9 +128,9 @@ eg:
 [2017-02-13] 更新支持代替sqlmap跑普通没有waf的注入点,之前版本要求只能跑有waf的注入点
 [2017-02-13] 更新支持自动进行版本升级
 [2017-02-12] 更新支持所有sqlmap参数
-[2017-01-18] fix line128处的slef改成self，fix line128处的db_name未定义错误
+[2017-01-18] fix line128处的slef改成self,fix line128处的db_name未定义错误
 [2016-11-15] 修复一处ACCESS数据库考虑不周全判断和几处good_print函数调用错误
-[2016-11-15] 增加支持代理自动切换功能,自选，默认不用代理[用代理速度较慢]
+[2016-11-15] 增加支持代理自动切换功能,自选,默认不用代理[用代理速度较慢]
 [2016-11-02] 增加access数据库特殊性的处理
 [2016-11-01] get_db_type_need_tamper之后的数据库类型获取由之前的get_db_type_from_log_file改成
              eval(get_key_value_from_config_file(self.log_config_file,'default','db_type'))
