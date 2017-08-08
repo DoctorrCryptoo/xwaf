@@ -8,7 +8,7 @@ if sys.version_info < (3, 0):
     sys.stdout.write("Sorry,xwaf requires Python 3.x\n")
     sys.exit(1)
 
-os.system("pip3 install exp10it -U --no-cache")
+os.system("pip3 install exp10it -U --no-cache-dir")
 from exp10it import figlet2file
 from exp10it import update_config_file_key_value
 from exp10it import get_key_value_from_config_file
@@ -23,7 +23,7 @@ from exp10it import get_request
 class Program(object):
 
     def __init__(self):
-        self.currentVersion=1.13
+        self.currentVersion=1.14
         a=get_string_from_command("sqlmap")
         if not os.path.exists("/usr/share/sqlmap/sqlmap.py"):
             os.system("git clone https://github.com/sqlmapproject/sqlmap.git /usr/share/sqlmap")
