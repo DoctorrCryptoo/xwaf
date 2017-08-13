@@ -13,14 +13,18 @@ illegal.It is the end user's responsibility to obey all applicable local, state 
 assume no liability and are not responsible for any misuse or damage caused by this program.
 
 
+
 ### Requirement
 
 ```
 python3
 pip3
-works on linux(test on ubuntu and kali2.0,others not test)
+mysql
+linux(test on ubuntu and kali2.0,others should based on debain)
+```
 
-python3安装可参考如下步骤:
+python3安装可参考如下步骤
+
     apt-get install python3
     或:
     wget https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tar.xz
@@ -29,12 +33,13 @@ python3安装可参考如下步骤:
     ./configure --prefix=/opt/python3
     make && make install
     ln -s /opt/python3/bin/python3.5 /usr/local/bin/python3
+    
+pip3安装
 
-pip3安装:
-apt-get install -y python3-pip
-或
-https://pip.pypa.io/en/stable/installing
-```
+    apt-get install -y python3-pip
+    或
+    https://pip.pypa.io/en/stable/installing
+
 
 ### Usage
 
