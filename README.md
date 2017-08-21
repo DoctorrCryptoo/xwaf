@@ -47,7 +47,7 @@ pip3安装
 eg:
 1.python3 xwaf.py -u "http://www.baidu.com/1.php?id=1"
 2.python3 xwaf.py -u "http://www.baidu.com/1.php" --data="postdata" -p xxx
-3.python3 xwaf.py -r /tmp/headerfile -p xxx --level 5
+3.python3 xwaf.py -r /tmp/headerfile -p xxx --risk 3 --level 5
 ```
 
 ### Attention
