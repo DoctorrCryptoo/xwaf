@@ -48,9 +48,9 @@ class Program(object):
         parsed = urlparse(self.url)
         safe_url = parsed.scheme + "://" + parsed.netloc
         if self.rflag==0:
-            self.sm_command = '''sqlmap -u "%s" --batch -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3 --smart''' % (self.url, safe_url)
+            self.sm_command = '''sqlmap -u "%s" --batch --risk 3 -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3 --smart''' % (self.url, safe_url)
         else:
-            self.sm_command = '''sqlmap --batch -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3 --smart''' % safe_url
+            self.sm_command = '''sqlmap --batch --risk 3 -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3 --smart''' % safe_url
 
         self.sm_hex_command = self.sm_command + " --hex"
         self.sm_no_cast_command = self.sm_command + " --no-cast"
