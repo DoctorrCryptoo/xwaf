@@ -23,7 +23,7 @@ from exp10it import get_request
 class Program(object):
 
     def __init__(self):
-        self.currentVersion=1.14
+        self.currentVersion=1.15
         a=get_string_from_command("sqlmap")
         if not os.path.exists("/usr/share/sqlmap/sqlmap.py"):
             os.system("git clone https://github.com/sqlmapproject/sqlmap.git /usr/share/sqlmap")
