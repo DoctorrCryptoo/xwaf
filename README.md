@@ -120,6 +120,7 @@ eg:
 ### Changelog
 
 ```
+[2017-08-25] 更新添加默认参数--risk 3
 [2017-07-05] 通过在发送[设置]self.stop_order=1后睡1s来解决底部打印混乱的问题
 [2017-07-05] 更新支持根据github上的sqlmap的tamper的更新情况自动更新tamper[sqlmap]
 [2017-07-05] 添加支持检测系统有没有将sqlmap添加到path中,如果没有则自动添加
@@ -136,9 +137,4 @@ eg:
 [2016-11-02] 增加access数据库特殊性的处理
 [2016-11-01] get_db_type_need_tamper之后的数据库类型获取由之前的get_db_type_from_log_file改成
              eval(get_key_value_from_config_file(self.log_config_file,'default','db_type'))
-```
-
-### Todo
-
-```
 ```
