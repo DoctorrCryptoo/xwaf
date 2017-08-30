@@ -120,6 +120,7 @@ eg:
 ### Changelog
 
 ```
+[2017-08-30] 修复--suffix " or '1'='1"类型的bug
 [2017-08-25] 更新添加默认参数--risk 3
 [2017-07-05] 通过在发送[设置]self.stop_order=1后睡1s来解决底部打印混乱的问题
 [2017-07-05] 更新支持根据github上的sqlmap的tamper的更新情况自动更新tamper[sqlmap]
