@@ -23,7 +23,7 @@ from exp10it import get_request
 class Program(object):
 
     def __init__(self):
-        self.currentVersion=1.15
+        self.currentVersion=1.16
         a=get_string_from_command("sqlmap")
         if not os.path.exists("/usr/share/sqlmap/sqlmap.py"):
             os.system("git clone https://github.com/sqlmapproject/sqlmap.git /usr/share/sqlmap")
@@ -48,9 +48,9 @@ class Program(object):
         parsed = urlparse(self.url)
         safe_url = parsed.scheme + "://" + parsed.netloc
         if self.rflag==0:
-            self.sm_command = '''sqlmap -u "%s" --batch --risk 3 -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3 --smart''' % (self.url, safe_url)
+            self.sm_command = '''sqlmap -u "%s" --batch --risk 3 -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 5 --smart''' % (self.url, safe_url)
         else:
-            self.sm_command = '''sqlmap --batch --risk 3 -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 3 --smart''' % safe_url
+            self.sm_command = '''sqlmap --batch --risk 3 -v 3 --threads 4 --random-agent --safe-url "%s" --safe-freq 1 --level 5 --smart''' % safe_url
 
         self.sm_hex_command = self.sm_command + " --hex"
         self.sm_no_cast_command = self.sm_command + " --no-cast"
