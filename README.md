@@ -73,6 +73,8 @@ eg:
 
 ### 代码流程图
 
+<img src="https://raw.githubusercontent.com/3xp10it/pic/master/xwaf.png">
+
 ```markdown
 以[127.0.0.1/1.php?id=1为例]
 
