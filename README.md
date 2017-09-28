@@ -116,12 +116,15 @@ eg:
   waf的sqlmap语句
 5.在tamper组合中,先用到的tamper会加入到上面的ini文件中,在以后的每个tamper组合中,综合已经得到的有用的
   tamper再组合,在上面的ini文件中的tamper_list即为不断完善的tamper组合
-6.支持自动更新升级,当前版本为1.16
+6.支持自动更新升级,当前版本为1.17
 ```
 
 ### Changelog
 
 ```
+[2017-09-06] 由原来的`tamper_string = self.get_from_tuple(current_tamper_list.append(tamper_string))
+             修改为current_tamper_list.append(tamper_string)
+             tamper_string = self.get_from_tuple(current_tamper_list)
 [2017-09-05] 修改--level 3为--level 5
 [2017-08-30] 修复--suffix " or '1'='1"类型的bug
 [2017-08-25] 更新添加默认参数--risk 3
