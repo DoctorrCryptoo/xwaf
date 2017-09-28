@@ -122,7 +122,7 @@ eg:
 ### Changelog
 
 ```
-[2017-09-06] 由原来的`tamper_string = self.get_from_tuple(current_tamper_list.append(tamper_string))
+[2017-09-28] 由原来的`tamper_string = self.get_from_tuple(current_tamper_list.append(tamper_string))
              修改为current_tamper_list.append(tamper_string)
              tamper_string = self.get_from_tuple(current_tamper_list)
 [2017-09-05] 修改--level 3为--level 5
