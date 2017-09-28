@@ -23,7 +23,7 @@ from exp10it import get_request
 class Program(object):
 
     def __init__(self):
-        self.currentVersion=1.16
+        self.currentVersion=1.17
         a=get_string_from_command("sqlmap")
         if not os.path.exists("/usr/share/sqlmap/sqlmap.py"):
             os.system("git clone https://github.com/sqlmapproject/sqlmap.git /usr/share/sqlmap")
@@ -510,7 +510,8 @@ blocked by waf for your mass requests? [N|y]")
                     # 此时返回0,相当于这个测试已经测过了,不再测
                     return 0
                 else:
-                    tamper_string = self.get_from_tuple(current_tamper_list.append(tamper_string))
+                    current_tamper_list.append(tamper_string)
+                    tamper_string = self.get_from_tuple(current_tamper_list)
             else:
                 # 当前传入的tamper_string有超过一种tamper
                 for each_tamper in tamper_string.split(","):
