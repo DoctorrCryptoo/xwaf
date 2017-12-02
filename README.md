@@ -122,6 +122,7 @@ eg:
 ### Changelog
 
 ```
+[2017-12-02] 修复homePath变更带来的bug
 [2017-09-28] 由原来的`tamper_string = self.get_from_tuple(current_tamper_list.append(tamper_string))
              修改为current_tamper_list.append(tamper_string)
              tamper_string = self.get_from_tuple(current_tamper_list)
