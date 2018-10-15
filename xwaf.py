@@ -66,9 +66,11 @@ class Program(object):
         self.MAXDB = []
         self.SYBASE = []
         self.HSQLDB = []
-        os.system('rm /usr/share/sqlmap/tamper/*.pyc')
-        tamper_names = os.listdir('/usr/share/sqlmap/tamper')
+        tamper_names=os.listdir('/usr/share/sqlmap/tamper/')
         tamper_names.remove('__init__.py')
+        for each_script in tamper_names:
+            if ".py"!=each_script[-3:]:
+                tamper_names.remove(each_script)
 
         for each_script in tamper_names:
             self.check_DB_type_from_script(each_script)
