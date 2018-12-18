@@ -417,7 +417,7 @@ blocked by waf for your mass requests? [N|y]")
 
     def check_DB_type_from_script(self, script_name):
         script_has_any_DB = 0
-        with open('/usr/share/sqlmap/tamper/' + script_name, 'r+') as f:
+        with open('/usr/share/sqlmap/tamper/' + script_name, 'r+',errors='ignore') as f:
             tamper_content = f.read()
 
         mysql_pattern = re.compile(r"MySQL", re.I)
