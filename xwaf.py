@@ -37,7 +37,10 @@ class Program(object):
         #rflag为1代表sqlmap的参数中有-r选项
         self.rflag=0
         self.useProxy=False
-        figlet2file("xwaf", 0, True)
+        try:
+            figlet2file("xwaf", 0, True)
+        except:
+            pass
         print("currentVersion:%s" % self.currentVersion)
         self.handle_url()
         self.log_file = HOME_PATH+"/.sqlmap/output/" + urlparse(self.url).hostname + "/log"
