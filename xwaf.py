@@ -43,7 +43,7 @@ class Program(object):
             pass
         print("currentVersion:%s" % self.currentVersion)
         self.handle_url()
-        self.log_file = HOME_PATH+"/.sqlmap/output/" + urlparse(self.url).hostname + "/log"
+        self.log_file = HOME_PATH+"/root/.local/share/sqlmap/output/" + urlparse(self.url).hostname + "/log"
         self.log_config_file = self.log_file[:-3] + "config_file.ini"
         self.has_good_sqli_type = 0
         #下面这句决定在全局是否加代理
