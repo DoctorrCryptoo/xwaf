@@ -15,7 +15,7 @@ from exp10it import get_key_value_from_config_file
 from exp10it import CLIOutput
 from exp10it import get_input_intime
 from exp10it import get_http_or_https
-from exp10it import HOME_PATH
+from exp10it import sfe
 from exp10it import get_string_from_command
 from exp10it import get_request
 
